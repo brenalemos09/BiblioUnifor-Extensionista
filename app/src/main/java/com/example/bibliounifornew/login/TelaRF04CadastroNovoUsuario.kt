@@ -161,12 +161,14 @@ class TelaRF04CadastroNovoUsuario : AppCompatActivity() {
                     tvErroEmail.text = "E-mail já cadastrado"
                     tvErroEmail.visibility = View.VISIBLE
                 } else {
+                    // CORREÇÃO: Remoção do parâmetro 'senha'.
+                    // A senha será enviada diretamente para o Firebase Auth na próxima etapa.
                     db.usuarioDao().inserir(
                         Usuario(
+                            uid = "", // TODO: Será preenchido com o UID gerado pelo Firebase Auth
                             nome = etNome.text.toString(),
                             usuario = etUsuario.text.toString(),
-                            email = email,
-                            senha = senha
+                            email = email
                         )
                     )
                     mostrarPopupSucesso()
