@@ -89,14 +89,33 @@ class TelaRF12TelaDoLivro : AppCompatActivity() {
     private fun carregarDadosDoLivro(id: String) {
         lifecycleScope.launch {
             val livro = libroDao.buscarLivroPorId(id)
-            livro?.let {
-                findViewById<TextView>(R.id.textTituloLivro).text = it.title
-                findViewById<TextView>(R.id.textAutorLivro).text = it.author
-                findViewById<TextView>(R.id.textSobreLivro).text = it.content
+            if (livro != null) {
+                findViewById<TextView>(R.id.textTituloLivro).text = livro.title
+                findViewById<TextView>(R.id.textAutorLivro).text = livro.author
+                findViewById<TextView>(R.id.textSobreLivro).text = livro.content
 
                 val imgCapa = findViewById<ImageView>(R.id.imageLivroDetalhes)
                 // Usando placeholder ou imagem real se disponível
                 imgCapa.setImageResource(R.drawable.o_alienista_capa)
+            } else {
+                // Mock data para IDs conhecidos da Minha Livraria caso o banco esteja vazio
+                when(id) {
+                    "1" -> {
+                        findViewById<TextView>(R.id.textTituloLivro).text = "O Alienista"
+                        findViewById<TextView>(R.id.textAutorLivro).text = "Machado de Assis"
+                        findViewById<TextView>(R.id.textSobreLivro).text = "Um clássico da literatura brasileira..."
+                    }
+                    "2" -> {
+                        findViewById<TextView>(R.id.textTituloLivro).text = "A Sociedade do Anel"
+                        findViewById<TextView>(R.id.textAutorLivro).text = "J.R.R. Tolkien"
+                        findViewById<TextView>(R.id.textSobreLivro).text = "O primeiro volume de O Senhor dos Anéis..."
+                    }
+                    "3" -> {
+                        findViewById<TextView>(R.id.textTituloLivro).text = "Vidas Secas"
+                        findViewById<TextView>(R.id.textAutorLivro).text = "Graciliano Ramos"
+                        findViewById<TextView>(R.id.textSobreLivro).text = "Uma das obras mais importantes do regionalismo..."
+                    }
+                }
             }
         }
     }

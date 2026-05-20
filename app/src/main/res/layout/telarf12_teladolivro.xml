@@ -138,13 +138,13 @@
                     android:id="@+id/buttonNaoLido"
                     style="@style/Widget.MaterialComponents.Button.TextButton"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
+                    android:layout_height="48dp"
                     android:layout_weight="1"
                     android:text="@string/label_btn_nao_lido"
                     android:textAllCaps="false"
                     android:backgroundTint="#F0F7FF"
                     android:textColor="@color/biblio_dark"
-                    app:cornerRadius="22dp"/>
+                    app:cornerRadius="24dp"/>
 
                 <Space
                     android:layout_width="8dp"
@@ -154,13 +154,13 @@
                     android:id="@+id/buttonLendo"
                     style="@style/Widget.MaterialComponents.Button.TextButton"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
+                    android:layout_height="48dp"
                     android:layout_weight="1"
                     android:text="@string/label_btn_lendo"
                     android:textAllCaps="false"
                     android:backgroundTint="#E1F0FF"
                     android:textColor="@color/biblio_dark"
-                    app:cornerRadius="22dp"/>
+                    app:cornerRadius="24dp"/>
 
                 <Space
                     android:layout_width="8dp"
@@ -170,13 +170,13 @@
                     android:id="@+id/buttonLido"
                     style="@style/Widget.MaterialComponents.Button.TextButton"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
+                    android:layout_height="48dp"
                     android:layout_weight="1"
                     android:text="@string/label_btn_lido"
                     android:textAllCaps="false"
                     android:backgroundTint="#F0F7FF"
                     android:textColor="@color/biblio_dark"
-                    app:cornerRadius="22dp"/>
+                    app:cornerRadius="24dp"/>
             </LinearLayout>
 
             <!-- AÇÕES DE AQUISIÇÃO -->
