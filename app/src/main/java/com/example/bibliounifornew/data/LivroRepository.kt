@@ -23,16 +23,21 @@ class LivroRepository(
 
             for (documento in snapshot.documents) {
                 // Mapeia o documento da nuvem para a nossa entidade local
+                // Dentro do loop for (documento in snapshot.documents) no LivroRepository
                 val livro = EntidadeLivro(
-                    id = documento.id, // O ID único do Firebase
+                    id = documento.id,
                     title = documento.getString("title") ?: "",
                     author = documento.getString("author") ?: "",
-                    isbn = documento.getString("isbn") ?: "",
+                    description = documento.getString("description") ?: "", // CORRIGIDO: Era 'content'
                     category = documento.getString("category") ?: "",
                     isAvailable = documento.getBoolean("isAvailable") ?: true,
                     publishDate = documento.getString("publishDate") ?: "",
-                    content = documento.getString("content") ?: "",
-                    coverUrl = documento.getString("coverUrl") ?: ""
+                    coverUrl = documento.getString("coverUrl") ?: "",
+                    // Adicionando os novos mapeamentos para não quebrar:
+                    isbn10 = documento.getString("isbn10") ?: "",
+                    isbn13 = documento.getString("isbn13") ?: "",
+                    publisher = documento.getString("publisher") ?: "",
+                    language = documento.getString("language") ?: ""
                 )
 
                 // O OnConflictStrategy.REPLACE no DAO vai atualizar se já existir ou criar se for novo

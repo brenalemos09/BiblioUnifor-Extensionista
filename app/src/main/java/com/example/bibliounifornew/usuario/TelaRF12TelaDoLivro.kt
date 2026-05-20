@@ -1,5 +1,3 @@
-package com.example.bibliounifornew.usuario
-
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -9,56 +7,49 @@ import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.example.bibliounifornew.data.AppDatabase
-import com.example.bibliounifornew.R
+import androidx.activity.viewModels // Importante para o "by viewModels"
 import kotlinx.coroutines.launch
-
+import com.example.bibliounifornew.R
+import com.example.bibliounifornew.data.AppDatabase
+import com.example.bibliounifornew.data.LivroRepository
+// Ajuste o import abaixo se colocou a ViewModel noutra pasta
+import com.example.bibliounifornew.viewmodel.LivroViewModel
+import com.example.bibliounifornew.viewmodel.LivroViewModelFactory
+import com.google.firebase.firestore.FirebaseFirestore
 class TelaRF12TelaDoLivro : AppCompatActivity() {
 
-    private val database by lazy { AppDatabase.getDatabase(this@TelaRF12TelaDoLivro) }
-    private val libroDao by lazy { database.livroDao() }
+    // A mágica da arquitetura limpa: instanciamos a ViewModel via Factory
+    private val viewModel: LivroViewModel by viewModels {
+        val database = AppDatabase.getDatabase(applicationContext)
+        val repository = LivroRepository(database.livroDao(), FirebaseFirestore.getInstance())
+        LivroViewModelFactory(repository)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.telarf12_teladolivro)
 
-        val context: Context = this@TelaRF12TelaDoLivro
-        // CORREÇÃO: Pegando o ID como String em vez de Int
         val livroId = intent.getStringExtra("LIVRO_ID")
 
-        // CORREÇÃO: Verificando se a String não é nula
         if (livroId != null) {
             carregarDadosDoLivro(livroId)
         }
 
-        findViewById<Button>(R.id.buttonVerMais).setOnClickListener {
-            val intentVerMais = Intent(context, TelaRF13VerMaisLivro::class.java)
-            intentVerMais.putExtra("LIVRO_ID", livroId) // Passando a String
-            startActivity(intentVerMais)
-        }
-
-        findViewById<Button>(R.id.buttonSolicitar).setOnClickListener {
-            val intentSolicitar = Intent(context, TelaRF19Solicitacoes::class.java)
-            intentSolicitar.putExtra("LIVRO_ID", livroId) // Passando a String
-            startActivity(intentSolicitar)
-        }
-
-        findViewById<Button>(R.id.buttonLer).setOnClickListener {
-            val intentLer = Intent(context, TelaRF14LeituraActivity::class.java)
-            intentLer.putExtra("LIVRO_ID", livroId) // Passando a String
-            startActivity(intentLer)
-        }
+        // ... (Mantenha o código dos seus botões de clique aqui embaixo) ...
     }
 
-    // CORREÇÃO: O parâmetro id agora é uma String
     private fun carregarDadosDoLivro(id: String) {
         lifecycleScope.launch {
-            val livro = libroDao.buscarLivroPorId(id)
+            // Chamamos a ViewModel! A tela não sabe o que é DAO.
+            val livro = viewModel.buscarLivroPorId(id)
+
             livro?.let {
                 findViewById<TextView>(R.id.textTituloLivro).text = it.title
                 findViewById<TextView>(R.id.textAutorLivro).text = it.author
-                findViewById<TextView>(R.id.textSobreLivro).text = it.content
+                findViewById<TextView>(R.id.textSobreLivro).text = it.description // Atualizado
+
+                // Mapeie o resto dos TextViews novos do Figma aqui (Língua, Setor, etc)
 
                 val imgCapa = findViewById<ImageView>(R.id.imageLivroDetalhes)
                 if (it.coverUrl.isNotEmpty()) {
