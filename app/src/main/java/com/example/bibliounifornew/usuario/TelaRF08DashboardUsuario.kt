@@ -82,6 +82,7 @@ class TelaRF08DashboardUsuario : AppCompatActivity() {
         // Click no Livro
         imgLivroAlienista.setOnClickListener {
             val intent = Intent(this, TelaRF12TelaDoLivro::class.java)
+            intent.putExtra("LIVRO_ID", "1") // O Alienista é ID 1
             startActivity(intent)
         }
 

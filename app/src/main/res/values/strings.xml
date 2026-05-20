@@ -139,6 +139,8 @@
     <string name="titulo_minha_lista_desejo">Minha Lista de Desejo</string>
     <string name="btn_sua_livraria">Sua Livraria</string>
     <string name="btn_alugar_livro">Alugar Livro</string>
+    <string name="label_em_estoque">Livro em estoque</string>
+    <string name="label_fora_estoque_list">Livro fora de estoque</string>
     <string name="label_fora_estoque">Fora de Estoque</string>
     <string name="label_sociedade_anel">A Sociedade do Anel</string>
     <string name="label_vidas_secas">Vidas Secas</string>
