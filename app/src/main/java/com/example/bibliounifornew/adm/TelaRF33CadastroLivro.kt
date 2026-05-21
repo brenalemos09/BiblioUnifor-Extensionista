@@ -10,7 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.bibliounifornew.R
 import com.google.android.material.button.MaterialButton
 
-class TelaRF33CadastroDeLivros : AppCompatActivity() {
+class TelaRF33CadastroLivro : AppCompatActivity() {
 
     private lateinit var etData: EditText
     private val REQUEST_CODE_DATA = 100
@@ -24,30 +24,48 @@ class TelaRF33CadastroDeLivros : AppCompatActivity() {
         val etISBN = findViewById<EditText>(R.id.editCodigoIsbn)
         etData = findViewById<EditText>(R.id.editDataPublicacao)
         val etQuantidade = findViewById<EditText>(R.id.editQuantidadeExemplares)
-        val btnEditarMais1 = findViewById<MaterialButton>(R.id.btnEditarMaisInformacoes2)
+        val btnAvancar = findViewById<MaterialButton>(R.id.btnEditarMaisInformacoes2)
         val tvErro = findViewById<TextView>(R.id.textErroCampos)
 
-        // Abrir calendário
-        // Ver qual pop up faz isso!
+        // Esconder erro inicialmente
+        tvErro.visibility = View.GONE
 
-        btnEditarMais1.setOnClickListener {
+        // Abrir calendário (RF33 -> Calendário) ao clicar no campo de data
+        // Mas permitir digitação manual se o usuário preferir
+        etData.setOnClickListener {
+            val intent = Intent(this, TelaRF33CalendarioPublicacao::class.java)
+            // Se já houver algo digitado, podemos passar para o calendário
+            intent.putExtra("dataAtual", etData.text.toString())
+            startActivityForResult(intent, REQUEST_CODE_DATA)
+        }
+
+        btnAvancar.setOnClickListener {
             val titulo = etTitulo.text.toString().trim()
             val autor = etAutor.text.toString().trim()
             val isbn = etISBN.text.toString().trim()
             val data = etData.text.toString().trim()
             val quantidade = etQuantidade.text.toString().trim()
 
+            // Validação de campos obrigatórios
             if (titulo.isEmpty() || autor.isEmpty() || isbn.isEmpty() || data.isEmpty() || quantidade.isEmpty()) {
                 tvErro.visibility = View.VISIBLE
-                // Feedback visual para o usuário
-                Toast.makeText(this@TelaRF33CadastroDeLivros, "Preencha todos os campos obrigatórios!", Toast.LENGTH_SHORT).show()
+                tvErro.text = "Preencha todas as informações do livro"
+                Toast.makeText(this, "Preencha todas as informações do livro", Toast.LENGTH_SHORT).show()
+            } else if (!validarFormatoData(data)) {
+                tvErro.visibility = View.VISIBLE
+                tvErro.text = "Data inválida (dd/mm/aaaa)"
+                Toast.makeText(this, "Data inválida", Toast.LENGTH_SHORT).show()
             } else {
                 tvErro.visibility = View.GONE
-                val intent = Intent(this@TelaRF33CadastroDeLivros, TelaRF33InfosAdicionais::class.java)
+                val intent = Intent(this, TelaRF33AdicionarMidiasExtras::class.java)
                 startActivity(intent)
             }
         }
+    }
 
+    // Função simples para validar formato de data dd/MM/yyyy
+    private fun validarFormatoData(data: String): Boolean {
+        return data.matches(Regex("""\d{2}/\d{2}/\d{4}"""))
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -57,5 +75,4 @@ class TelaRF33CadastroDeLivros : AppCompatActivity() {
             etData.setText(dataSelecionada)
         }
     }
-
 }
