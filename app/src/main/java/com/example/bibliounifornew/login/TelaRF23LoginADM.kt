@@ -4,6 +4,8 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.text.InputType
+import android.text.method.HideReturnsTransformationMethod
+import android.text.method.PasswordTransformationMethod
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
@@ -73,28 +75,16 @@ class TelaRF23LoginADM : AppCompatActivity() {
 
         bntMostraSenha.setOnClickListener {
             if (senhaVisivel) {
-
                 // ESCONDER SENHA
-                senha.inputType =
-                    InputType.TYPE_CLASS_TEXT or
-                            InputType.TYPE_TEXT_VARIATION_PASSWORD
-
+                senha.transformationMethod = PasswordTransformationMethod.getInstance()
                 bntMostraSenha.setImageResource(R.drawable.ic_eye_closed)
-
                 senhaVisivel = false
-
             } else {
-
                 // MOSTRAR SENHA
-                senha.inputType =
-                    InputType.TYPE_CLASS_TEXT or
-                            InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-
+                senha.transformationMethod = HideReturnsTransformationMethod.getInstance()
                 bntMostraSenha.setImageResource(R.drawable.ic_eye_open)
-
                 senhaVisivel = true
             }
-
             // Mantém cursor no final
             senha.setSelection(senha.text.length)
         }
