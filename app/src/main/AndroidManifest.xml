@@ -71,6 +71,9 @@
             android:name=".usuario.TelaRF17_5_PerfilAmigo"
             android:exported="false" />
         <activity
+            android:name=".adm.TelaRFAdmUsuarioAlugados"
+            android:exported="false" />
+        <activity
             android:name=".adm.TelaRF33CadastroLivro"
             android:exported="false" />
         <activity
