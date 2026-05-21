@@ -59,7 +59,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="28dp"
-            android:text="@string/titulo_adicionar_midia"
+            android:text="Informações Extras"
             android:textColor="@color/white"
             android:textSize="26sp"
             android:textStyle="bold"

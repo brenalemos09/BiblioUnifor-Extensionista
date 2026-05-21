@@ -15,13 +15,13 @@ class TelaRF32LivrosCRUD : AppCompatActivity() {
         // 🔹 Botão Criar Mídia
         val btnCriarMidia = findViewById<Button>(R.id.btnAdicionarMidia)
         btnCriarMidia?.setOnClickListener {
-            val intent = Intent(this@TelaRF32LivrosCRUD, TelaRF33CadastroDeLivros::class.java)
+            val intent = Intent(this@TelaRF32LivrosCRUD, TelaRF33CadastroLivro::class.java)
             startActivity(intent)
         }
 
         // 🔹 Botão Editar
         findViewById<Button>(R.id.btnEditarInformacoes)?.setOnClickListener {
-            val intent = Intent(this@TelaRF32LivrosCRUD, TelaRF33CadastroDeLivros::class.java)
+            val intent = Intent(this@TelaRF32LivrosCRUD, TelaRF33CadastroLivro::class.java)
             startActivity(intent)
         }
 

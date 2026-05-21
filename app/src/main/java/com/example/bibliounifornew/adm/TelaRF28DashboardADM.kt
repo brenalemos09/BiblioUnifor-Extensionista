@@ -24,7 +24,7 @@ class TelaRF28DashboardADM : AppCompatActivity() {
 
         // --- Listeners Principais ---
         btnTelaCrud?.setOnClickListener {
-            val intent = Intent(this@TelaRF28DashboardADM, TelaRF28CrudADM::class.java)
+            val intent = Intent(this@TelaRF28DashboardADM, TelaRF27CrudAdm::class.java)
             startActivity(intent)
         }
 
