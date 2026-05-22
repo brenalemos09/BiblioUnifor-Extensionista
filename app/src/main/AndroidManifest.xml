@@ -69,7 +69,16 @@
             android:name=".usuario.TelaRF17Amigos"
             android:exported="false" />
         <activity
-            android:name=".adm.TelaRF33CadastroDeLivros"
+            android:name=".usuario.TelaRF17_3_BuscaAmigos"
+            android:exported="false" />
+        <activity
+            android:name=".usuario.TelaRF17_5_PerfilAmigo"
+            android:exported="false" />
+        <activity
+            android:name=".adm.TelaRFAdmUsuarioAlugados"
+            android:exported="false" />
+        <activity
+            android:name=".adm.TelaRF33CadastroLivro"
             android:exported="false" />
         <activity
             android:name=".adm.TelaRF30UsuariosParaADM"
@@ -78,10 +87,13 @@
             android:name=".TelaRF35_1Data"
             android:exported="false" />
         <activity
-            android:name=".adm.TelaRF33InfosAdicionais"
+            android:name=".adm.TelaRF33AdicionarMidiasExtras"
             android:exported="false" />
         <activity
-            android:name=".adm.TelaRF33Versoes"
+            android:name=".adm.TelaRF33AdicionarMidiaArquivos"
+            android:exported="false" />
+        <activity
+            android:name=".adm.TelaRF33CalendarioPublicacao"
             android:exported="false" />
         <activity
             android:name=".usuario.TelaRF10RedefinirSenha"
@@ -120,7 +132,7 @@
             android:name=".usuario.TelaRF18StatusAluguel"
             android:exported="false" />
         <activity
-            android:name=".usuario.TelaRF22RenovacaoOnline"
+            android:name=".usuario.TelaRF18CalendarioRenovacao"
             android:exported="false" />
         <activity
             android:name=".adm.TelaRF28DashboardADM"
@@ -132,7 +144,7 @@
             android:name=".login.TelaRF24RecuperacaoSenhaADM"
             android:exported="false" />
         <activity
-            android:name=".adm.TelaRF28CrudADM"
+            android:name=".adm.TelaRF27CrudAdm"
             android:exported="false" />
         <activity
             android:name=".MainActivity"
@@ -145,6 +157,12 @@
             android:exported="false" />
         <activity
             android:name=".usuario.TelaRF11TelaDePesquisa"
+            android:exported="false" />
+        <activity
+            android:name=".usuario.TelaRF11ResultadoPesquisa"
+            android:exported="false" />
+        <activity
+            android:name=".usuario.TelaCalendario"
             android:exported="false" />
         <activity
             android:name=".usuario.TelaRF11_1_ResultadoPesquisa"

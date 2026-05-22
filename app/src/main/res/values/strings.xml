@@ -56,6 +56,34 @@
 
     <string name="btn_remover_historico">Remover do Histórico</string>
     <string name="nome_usuario">João Bobo</string>
+    <string name="label_notificacao">Notificação</string>
+    <string name="label_configuracao">Configuração</string>
+    <string name="label_perfil">Perfil</string>
+    <string name="label_bem_vindo">Bem-vindo</string>
+    <string name="label_bem_vindo_caps">BEM-VINDO</string>
+    <string name="btn_procurar_livros">Procurar Livros</string>
+    <string name="btn_minha_livraria">Minha livraria</string>
+    <string name="btn_lista_desejos">Lista de desejos</string>
+    <string name="btn_historico">Histórico</string>
+    <string name="btn_status_aluguel">Status aluguel</string>
+    <string name="btn_sair_conta">Sair da conta</string>
+    <string name="label_descobrir">Descobrir</string>
+    <string name="desc_livro">Capa do Livro</string>
+    <string name="btn_alugar">Alugar</string>
+    <string name="btn_solicitar">Solicitar</string>
+    <string name="btn_ler_agora">LER AGORA</string>
+    <string name="label_status_leitura">Status da Leitura</string>
+    <string name="label_btn_nao_lido">Não lido</string>
+    <string name="label_btn_lendo">Lendo</string>
+    <string name="label_btn_lido">Lido</string>
+    <string name="label_sua_nota">Sua nota</string>
+    <string name="label_disponivel_aluguel">Disponível para aluguel</string>
+    <string name="label_unidades_estoque">5 unidades</string>
+    <string name="label_sinopse_title">Sinopse</string>
+    <string name="sinopse_alienista">Uma das obras-primas de Machado de Assis, o livro narra a história de Simão Bacamarte, um médico que decide fundar a Casa Verde, um asilo para cuidar de loucos em Itaguaí...</string>
+    <string name="genero_ficcao_psicologica">Ficção Psicológica</string>
+    <string name="btn_ver_mais_detalhes">Ver mais detalhes</string>
+    <string name="label_avaliacoes_count">Avaliações (24)</string>
 
     <!-- Navigation Descriptions -->
     <string name="nav_home_desc">Início</string>
@@ -111,6 +139,8 @@
     <string name="titulo_minha_lista_desejo">Minha Lista de Desejo</string>
     <string name="btn_sua_livraria">Sua Livraria</string>
     <string name="btn_alugar_livro">Alugar Livro</string>
+    <string name="label_em_estoque">Livro em estoque</string>
+    <string name="label_fora_estoque_list">Livro fora de estoque</string>
     <string name="label_fora_estoque">Fora de Estoque</string>
     <string name="label_sociedade_anel">A Sociedade do Anel</string>
     <string name="label_vidas_secas">Vidas Secas</string>
@@ -173,6 +203,7 @@
     <!-- RF20 Termos e Condições -->
     <string name="titulo_termos">Termos e Condições</string>
     <string name="label_aceitar_termos">Eu aceito os termos e condições</string>
+    <string name="corpo_termos_condicoes">Ao utilizar o aplicativo BiblioUnifor, o usuário concorda em respeitar as regras de empréstimo, devolução e utilização dos materiais disponíveis. O atraso na devolução poderá gerar bloqueios temporários. Os dados cadastrados serão utilizados apenas para funcionamento interno do sistema acadêmico. O usuário concorda em manter suas informações atualizadas e utilizar o aplicativo de forma responsável.\n\n1. Uso responsável da plataforma.\n\n2. Respeito aos prazos de aluguel.\n\n3. Responsabilidade sobre materiais emprestados.\n\n4. Aceitação da política interna.\n\n5. Ciência sobre notificações automáticas.\n\n6. Autorização de armazenamento básico de dados.\n\nLeia até o final para confirmar.</string>
     <string name="btn_continuar">Continuar</string>
 
     <!-- RF22 Histórico -->

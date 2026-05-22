@@ -1,5 +1,6 @@
 package com.example.bibliounifornew.usuario
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
@@ -36,15 +37,34 @@ class TelaRF12TelaDoLivro : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.telarf12_teladolivro)
 
-        livroIdAtual = intent.getStringExtra("LIVRO_ID")
+        val context: Context = this@TelaRF12TelaDoLivro
+        // CORREÇÃO: Pegando o ID como String em vez de Int
+        val livroId = intent.getStringExtra("LIVRO_ID")
+        livroIdAtual = livroId
 
-        if (livroIdAtual != null) {
-            carregarDadosDoLivro(livroIdAtual!!)
-            configurarBotoesDeStatus()
+        // CORREÇÃO: Verificando se a String não é nula
+        if (livroId != null) {
+            carregarDadosDoLivro(livroId)
         }
 
-        findViewById<Button>(R.id.buttonSuaLivraria).setOnClickListener {
-            startActivity(Intent(this, TelaRF15MinhaLivrariaActivity::class.java))
+        configurarBotoesDeStatus()
+
+        findViewById<Button>(R.id.buttonVerMais).setOnClickListener {
+            val intentVerMais = Intent(context, TelaRF13VerMaisLivro::class.java)
+            intentVerMais.putExtra("LIVRO_ID", livroId) // Passando a String
+            startActivity(intentVerMais)
+        }
+
+        findViewById<Button>(R.id.buttonSolicitar).setOnClickListener {
+            val intentSolicitar = Intent(context, TelaRF19Solicitacoes::class.java)
+            intentSolicitar.putExtra("LIVRO_ID", livroId) // Passando a String
+            startActivity(intentSolicitar)
+        }
+
+        findViewById<Button>(R.id.buttonLer).setOnClickListener {
+            val intentLer = Intent(context, TelaRF14LeituraActivity::class.java)
+            intentLer.putExtra("LIVRO_ID", livroId) // Passando a String
+            startActivity(intentLer)
         }
     }
 
@@ -59,10 +79,11 @@ class TelaRF12TelaDoLivro : AppCompatActivity() {
                 val imgCapa = findViewById<ImageView>(R.id.imageLivroDetalhes)
                 if (it.coverUrl.isNotEmpty()) {
                     imgCapa.load(it.coverUrl) {
-                        crossfade(true)
                         placeholder(R.drawable.osda)
                         error(R.drawable.osda)
                     }
+                } else {
+                    imgCapa.setImageResource(R.drawable.osda)
                 }
             }
         }
