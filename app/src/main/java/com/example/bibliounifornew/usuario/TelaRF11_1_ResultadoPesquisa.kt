@@ -70,8 +70,8 @@ class TelaRF11_1_ResultadoPesquisa : AppCompatActivity() {
 
     private fun realizarBusca(termo: String) {
         val firestore = FirebaseFirestore.getInstance()
+        val termoLower = termo.lowercase().trim()
 
-        // Vamos direto no banco online buscar qualquer livro que o título contenha o termo
         firestore.collection("livros")
             .get()
             .addOnSuccessListener { result ->
@@ -79,22 +79,25 @@ class TelaRF11_1_ResultadoPesquisa : AppCompatActivity() {
 
                 for (document in result) {
                     val titulo = document.getString("titulo") ?: ""
+                    val autor = document.getString("autor") ?: ""
+                    val descricao = document.getString("descricao") ?: ""
 
-                    // Filtra na mão: se o título (em minúsculas) contém o termo (em minúsculas)
-                    if (titulo.lowercase().contains(termo.lowercase())) {
+                    // O NOVO FILTRO: Procura no título, no autor OU na descrição!
+                    if (titulo.lowercase().contains(termoLower) ||
+                        autor.lowercase().contains(termoLower) ||
+                        descricao.lowercase().contains(termoLower)) {
 
-                        // Transforma o documento do Firebase no molde EntidadeLivro
                         val livro = EntidadeLivro(
                             id = document.id,
                             title = titulo,
-                            author = document.getString("autor") ?: "Desconhecido",
+                            author = autor,
                             coverUrl = document.getString("coverUrl") ?: ""
                         )
                         listaDeLivros.add(livro)
                     }
                 }
 
-                // Manda o adapter desenhar a lista fresquinha que acabou de vir da internet!
+                // Manda a lista completa e filtrada para a tela
                 adapter.updateData(listaDeLivros)
             }
             .addOnFailureListener {

@@ -20,40 +20,63 @@ class BibliotecaOnlineRepository {
     // Busca online e salva no Firestore
     suspend fun buscarEImportarLivro(termoDeBusca: String, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
         try {
-            // Substitua pela chave real que você copiou no Passo 1
+            // A sua chave VIP da Google
             val minhaChaveApi = "AIzaSyAEojGm94sofbQ2ZRnlPjVPiKtrQKeqDE4"
 
-            // Agora enviamos a busca E a chave de acesso juntas
             val resposta = googleBooksService.buscarLivros(termoDeBusca, minhaChaveApi)
 
-            val primeiroLivroEncontrado = resposta.items?.firstOrNull()
+            // A MÁGICA MUDA AQUI: Pega os 5 primeiros resultados (ou menos, se a API retornar poucos)
+            val listaLivrosApi = resposta.items?.take(5)
 
-            if (primeiroLivroEncontrado != null) {
-                // ... (o resto do seu código de salvar no Firestore continua exatamente igual)
-                val info = primeiroLivroEncontrado.volumeInfo
+            if (!listaLivrosApi.isNullOrEmpty()) {
+                var livrosProcessados = 0
+                val totalLivros = listaLivrosApi.size
 
-                // Tenta capturar o ISBN_13 prioritariamente, senão pega o primeiro identificador que achar
-                val isbnEncontrado = info.industryIdentifiers?.find { it.type == "ISBN_13" }?.identifier
-                    ?: info.industryIdentifiers?.firstOrNull()?.identifier
-                    ?: "Não informado"
+                // Faz um loop por cada um dos 5 livros
+                listaLivrosApi.forEach { livroApi ->
+                    val info = livroApi.volumeInfo
+                    val tituloEncontrado = info.title ?: "Título Desconhecido"
 
-                // Monta o mapa completo para o Firestore com os novos campos
-                val dadosLivro = hashMapOf(
-                    "titulo" to (info.title ?: "Título Desconhecido"),
-                    "autor" to (info.authors?.joinToString(", ") ?: "Autor Desconhecido"),
-                    "genero" to (info.categories?.joinToString(", ") ?: "Gênero Desconhecido"),
-                    "isbn" to isbnEncontrado,
-                    "descricao" to (info.description ?: "Sem descrição disponível."),
-                    "coverUrl" to (info.imageLinks?.thumbnail?.replace("http://", "https://") ?: "")
-                )
+                    // ESCUDO ANTI-DUPLICATAS individual para CADA livro
+                    firestore.collection("livros")
+                        .whereEqualTo("titulo", tituloEncontrado)
+                        .get()
+                        .addOnSuccessListener { querySnapshot ->
 
-                // Grava na coleção 'livros' do Firebase
-                firestore.collection("livros")
-                    .add(dadosLivro)
-                    .addOnSuccessListener {
-                        onSuccess()
-                    }
-                    .addOnFailureListener { e -> onFailure(e) }
+                            if (querySnapshot.isEmpty) {
+                                // O livro NÃO existe, vamos salvar!
+                                val isbnEncontrado = info.industryIdentifiers?.find { it.type == "ISBN_13" }?.identifier
+                                    ?: info.industryIdentifiers?.firstOrNull()?.identifier
+                                    ?: "Não informado"
+
+                                val dadosLivro = hashMapOf(
+                                    "titulo" to tituloEncontrado,
+                                    "autor" to (info.authors?.joinToString(", ") ?: "Autor Desconhecido"),
+                                    "genero" to (info.categories?.joinToString(", ") ?: "Gênero Desconhecido"),
+                                    "isbn" to isbnEncontrado,
+                                    "descricao" to (info.description ?: "Sem descrição disponível."),
+                                    "coverUrl" to (info.imageLinks?.thumbnail?.replace("http://", "https://") ?: "")
+                                )
+
+                                firestore.collection("livros")
+                                    .add(dadosLivro)
+                                    .addOnCompleteListener {
+                                        livrosProcessados++
+                                        // Só recarrega a tela quando o último livro dos 5 terminar de salvar
+                                        if (livrosProcessados == totalLivros) onSuccess()
+                                    }
+                            } else {
+                                // O livro JÁ EXISTE, ignora e avança a contagem
+                                livrosProcessados++
+                                if (livrosProcessados == totalLivros) onSuccess()
+                            }
+                        }
+                        .addOnFailureListener {
+                            // Se der erro na checagem de um, avança a contagem para não travar os outros
+                            livrosProcessados++
+                            if (livrosProcessados == totalLivros) onSuccess()
+                        }
+                }
             } else {
                 onFailure(Exception("Nenhum livro localizado para a busca informada."))
             }
