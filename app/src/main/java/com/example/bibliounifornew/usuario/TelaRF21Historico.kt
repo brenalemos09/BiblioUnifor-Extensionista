@@ -1,7 +1,7 @@
 package com.example.bibliounifornew.usuario
 
 import android.app.Dialog
-import android.content.Context
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
@@ -12,17 +12,39 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.bibliounifornew.R
+import com.example.bibliounifornew.data.AuthRepository
 
 class TelaRF21Historico : AppCompatActivity() {
+
+    // 1. Instanciando o Repositório de Segurança
+    private val authRepository = AuthRepository()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.telarf21_historico)
 
-        // Botões de remover da lista principal
+        // ----------------------------------------------------
+        // 2. ATUALIZANDO O CABEÇALHO (Dados Reais de Sessão)
+        // ----------------------------------------------------
+        val textCabecalho = findViewById<TextView>(R.id.textEmailHistorico)
+        val usuarioAtual = authRepository.getUsuarioAtual()
+
+        if (usuarioAtual != null) {
+            // Exibe o e-mail real da conta conectada diretamente do cache (Super Rápido!)
+            textCabecalho?.text = usuarioAtual.email
+        } else {
+            // Rota Protegida: Se a sessão expirou, desvia o usuário de volta para o Login
+            startActivity(Intent(this, com.example.bibliounifornew.login.TelaRF03LoginAluno::class.java))
+            finish()
+            return
+        }
+
+        // ----------------------------------------------------
+        // 3. LÓGICA DE HISTÓRICO (Cards Estáticos)
+        // ----------------------------------------------------
         val btnRemover1 = findViewById<Button>(R.id.btnRemoverHistorico)
         val btnRemover2 = findViewById<Button>(R.id.buttonRemoverHistorico2)
 
-        // Cards que serão removidos (IDs adicionados ao XML)
         val cardLivro1 = findViewById<View>(R.id.cardLivro1Historico)
         val cardStatus1 = findViewById<View>(R.id.cardStatus1Historico)
         val cardLivro2 = findViewById<View>(R.id.cardLivro2Historico)

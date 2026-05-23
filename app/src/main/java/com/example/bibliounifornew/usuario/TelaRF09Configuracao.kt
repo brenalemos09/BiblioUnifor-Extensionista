@@ -2,65 +2,87 @@ package com.example.bibliounifornew.usuario
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.View
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.bibliounifornew.R
+import com.example.bibliounifornew.data.AuthRepository
+import com.example.bibliounifornew.data.UsuarioRepository
 import com.example.bibliounifornew.login.TelaRF01BemVindo
 import com.google.android.material.button.MaterialButton
+import com.google.firebase.auth.FirebaseUser
 
 class TelaRF09Configuracao : AppCompatActivity() {
+
+    // 1. Instanciando os Repositórios e Variáveis Globais
+    private val authRepository = AuthRepository()
+    private val usuarioRepository = UsuarioRepository()
+    private var usuarioAtual: FirebaseUser? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.telarf09_configuracao)
 
-        // Botões principais
+        // Pega o usuário logado para usarmos na tela inteira
+        usuarioAtual = authRepository.getUsuarioAtual()
+
+        // Mapeamento de Componentes
         val btnRedefinir = findViewById<MaterialButton>(R.id.buttonRedefinirSenha)
         val btnApagar = findViewById<MaterialButton>(R.id.buttonApagarConta)
-
-        // Campos e ícones de edição
         val editNome = findViewById<EditText>(R.id.editNome)
         val editUsuario = findViewById<EditText>(R.id.editUsuario)
         val editBio = findViewById<EditText>(R.id.editBio)
-        
+        val textEmail = findViewById<TextView>(R.id.textUsuario)
         val iconEditNome = findViewById<ImageView>(R.id.iconEditNome)
         val iconEditUsuario = findViewById<ImageView>(R.id.iconEditUsuario)
         val iconEditBio = findViewById<ImageView>(R.id.iconEditBio)
-
-        // Senha e Olho
         val editSenhaAtual = findViewById<EditText>(R.id.editSenhaAtual)
         val iconOlhoSenha = findViewById<ImageView>(R.id.iconOlhoSenhaAtual)
 
-        // 1. ESTADO INICIAL: Campos desabilitados
+        // 2. ESTADO INICIAL: Campos desabilitados
         editNome.isEnabled = false
         editUsuario.isEnabled = false
         editBio.isEnabled = false
         editSenhaAtual.isEnabled = false
 
-        // 2. LÓGICA DO LÁPIS (EDITAR)
-        iconEditNome.setOnClickListener {
-            editNome.isEnabled = true
-            editNome.requestFocus()
-            editNome.setSelection(editNome.text.length)
+        // 3. CARREGAR DADOS REAIS DO FIREBASE
+        if (usuarioAtual != null) {
+            textEmail?.text = usuarioAtual!!.email
+
+            editNome.setText("Carregando...")
+            editUsuario.setText("...")
+
+            usuarioRepository.buscarPerfilUsuario(usuarioAtual!!.uid) { sucesso, dados, erro ->
+                if (sucesso && dados != null) {
+                    val nomeBanco = dados["nome"] as? String ?: ""
+                    val usernameBanco = dados["usuario"] as? String ?: ""
+                    val bioBanco = dados["biografia"] as? String ?: ""
+
+                    editNome.setText(nomeBanco)
+                    editUsuario.setText(usernameBanco)
+
+                    if (bioBanco.isNotEmpty()) {
+                        editBio.setText(bioBanco)
+                    } else {
+                        editBio.setText("Escreva um pouco sobre você...")
+                    }
+                } else {
+                    Toast.makeText(this, "Erro ao buscar dados: $erro", Toast.LENGTH_SHORT).show()
+                    editNome.setText("")
+                    editUsuario.setText("")
+                }
+            }
         }
 
-        iconEditUsuario.setOnClickListener {
-            editUsuario.isEnabled = true
-            editUsuario.requestFocus()
-            editUsuario.setSelection(editUsuario.text.length)
-        }
+        // 4. APLICANDO A LÓGICA DE EDIÇÃO INTELIGENTE
+        configurarCampoEditavel(editNome, iconEditNome, "nome")
+        configurarCampoEditavel(editUsuario, iconEditUsuario, "usuario")
+        configurarCampoEditavel(editBio, iconEditBio, "biografia")
 
-        iconEditBio.setOnClickListener {
-            editBio.isEnabled = true
-            editBio.requestFocus()
-            editBio.setSelection(editBio.text.length)
-        }
-
-        // 3. LÓGICA DO OLHO
+        // 5. LÓGICA DO OLHO DA SENHA
         var senhaVisivel = false
         iconOlhoSenha.setOnClickListener {
             senhaVisivel = !senhaVisivel
@@ -74,15 +96,46 @@ class TelaRF09Configuracao : AppCompatActivity() {
             editSenhaAtual.setSelection(editSenhaAtual.text.length)
         }
 
-        // 4. REDEFINIR SENHA (ABRE RF10)
+        // 6. REDEFINIR SENHA (ABRE RF10)
         btnRedefinir.setOnClickListener {
-            val intent = Intent(this, TelaRF10RedefinirSenha::class.java)
-            startActivity(intent)
+            startActivity(Intent(this, TelaRF10RedefinirSenha::class.java))
         }
 
-        // 5. APAGAR CONTA
+        // 7. APAGAR CONTA
         btnApagar.setOnClickListener {
             exibirPopupApagarConta()
+        }
+    }
+
+    // ---------------------------------------------------------
+    // MÉTODOS PRIVADOS DA CLASSE
+    // ---------------------------------------------------------
+
+    private fun configurarCampoEditavel(editText: EditText, iconEdicao: ImageView, nomeDoCampoNoBanco: String) {
+        // Destrava o campo
+        iconEdicao.setOnClickListener {
+            editText.isEnabled = true
+            editText.requestFocus()
+            editText.setSelection(editText.text.length)
+
+            val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+            imm.showSoftInput(editText, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+        }
+
+        // Trava e salva ao perder o foco
+        editText.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus && usuarioAtual != null) {
+                editText.isEnabled = false
+                val novoValor = editText.text.toString().trim()
+
+                usuarioRepository.atualizarCampoPerfil(usuarioAtual!!.uid, nomeDoCampoNoBanco, novoValor) { sucesso, erro ->
+                    if (sucesso) {
+                        Toast.makeText(this, "Alteração salva com sucesso!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(this, "Erro ao salvar: $erro", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
         }
     }
 
@@ -99,7 +152,6 @@ class TelaRF09Configuracao : AppCompatActivity() {
         val editSenha = dialogView.findViewById<EditText>(R.id.editSenhaPopup)
         val iconOlho = dialogView.findViewById<ImageView>(R.id.iconOlhoSenhaPopup)
 
-        // Lógica do olho no popup
         var senhaVisivelPopup = false
         iconOlho.setOnClickListener {
             senhaVisivelPopup = !senhaVisivelPopup
@@ -114,7 +166,8 @@ class TelaRF09Configuracao : AppCompatActivity() {
         }
 
         btnConfirmar.setOnClickListener {
-            // Navegar para a tela de Bem-Vindo (RF01) e limpar a pilha de atividades
+            authRepository.getUsuarioAtual()?.delete()
+
             val intent = Intent(this, TelaRF01BemVindo::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)

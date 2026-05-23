@@ -1,84 +1,72 @@
 package com.example.bibliounifornew.usuario
 
-import android.app.Activity
-import android.app.Dialog
 import android.content.Intent
 import android.os.Bundle
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.example.bibliounifornew.R
+import com.example.bibliounifornew.data.AuthRepository
+import com.example.bibliounifornew.data.UsuarioRepository
 import com.google.android.material.button.MaterialButton
 
 class TelaRF18StatusAluguel : AppCompatActivity() {
 
-    private lateinit var textDataVencimento1: TextView
-
-    // Lançador para a tela de calendário, esperando o resultado da nova data
-    private val startForResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val novaData = result.data?.getStringExtra("nova_data")
-            if (novaData != null) {
-                // Atualiza a data exibida no Livro 1 (Dom Casmurro)
-                textDataVencimento1.text = novaData
-            }
-        }
-    }
+    // 1. Instanciando os Repositórios
+    private val authRepository = AuthRepository()
+    private val usuarioRepository = UsuarioRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.telarf18_status_aluguel)
 
-        // Referências
-        textDataVencimento1 = findViewById(R.id.textDataVencimento1)
+        // ----------------------------------------------------
+        // 2. ATUALIZANDO O CABEÇALHO (Tchau, João Bobo!)
+        // ----------------------------------------------------
+        val textNomeUsuario = findViewById<TextView>(R.id.textNomeUsuarioAlugados)
+        val usuarioAtual = authRepository.getUsuarioAtual()
+
+        if (usuarioAtual != null) {
+            textNomeUsuario?.text = "Carregando..."
+
+            usuarioRepository.buscarPerfilUsuario(usuarioAtual.uid) { sucesso, dados, erro ->
+                if (sucesso && dados != null) {
+                    val nomeBanco = dados["nome"] as? String ?: "Usuário"
+                    textNomeUsuario?.text = nomeBanco
+                } else {
+                    Toast.makeText(this, "Erro ao carregar perfil: $erro", Toast.LENGTH_SHORT).show()
+                    textNomeUsuario?.text = "Erro"
+                }
+            }
+        } else {
+            // Se a sessão caiu, manda fazer login novamente
+            startActivity(Intent(this, com.example.bibliounifornew.login.TelaRF03LoginAluno::class.java))
+            finish()
+            return
+        }
+
+        // ----------------------------------------------------
+        // 3. LÓGICA DOS BOTÕES DE RENOVAR
+        // ----------------------------------------------------
         val btnRenovar1 = findViewById<MaterialButton>(R.id.btnRenovarLivro1)
         val btnRenovar2 = findViewById<MaterialButton>(R.id.btnRenovarLivro2)
         val btnRenovar3 = findViewById<MaterialButton>(R.id.btnRenovarLivro3)
 
-        // LIVRO 1: Dom Casmurro (Disponível renovação)
-        btnRenovar1.setOnClickListener {
-            // Abre tela inteira de calendário
+        // Livro 1 (Dom Casmurro) - Disponível para renovação -> Abre o seu Calendário
+        btnRenovar1?.setOnClickListener {
             val intent = Intent(this, TelaRF18CalendarioRenovacao::class.java)
-            startForResult.launch(intent)
+            // Você pode até passar o nome do livro para o calendário depois usando putExtra
+            startActivity(intent)
         }
 
-        // LIVRO 2: O Alienista (Limite atingido)
-        btnRenovar2.setOnClickListener {
-            showPopupLimite()
+        // Livro 2 (O Alienista) - Limite atingido (Botão Cinza no XML)
+        btnRenovar2?.setOnClickListener {
+            Toast.makeText(this, "Limite de renovação atingido para este livro.", Toast.LENGTH_SHORT).show()
         }
 
-        // LIVRO 3: 1984 (Prazo expirado)
-        btnRenovar3.setOnClickListener {
-            showPopupExpirado()
+        // Livro 3 (Vidas Secas) - Prazo Expirado (Botão Cinza no XML)
+        btnRenovar3?.setOnClickListener {
+            Toast.makeText(this, "Prazo expirado. Por favor, devolva o livro na biblioteca.", Toast.LENGTH_LONG).show()
         }
-    }
-
-    // =/=/=/=/=/=/=/=/=/=/=/=/=/=/=/=/=/=/=/=/=
-    // POPUPS DE CENÁRIOS (Simulados)
-    // =/=/=/=/=/=/=/=/=/=/=/=/=/=/=/=/=/=/=/=/=
-
-    private fun showPopupLimite() {
-        val dialog = Dialog(this)
-        dialog.setContentView(R.layout.popup_limite_renovacao)
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-
-        val btnVoltar = dialog.findViewById<MaterialButton>(R.id.buttonVoltarPopupRenovacao)
-        btnVoltar?.setOnClickListener {
-            dialog.dismiss()
-        }
-        dialog.show()
-    }
-
-    private fun showPopupExpirado() {
-        val dialog = Dialog(this)
-        dialog.setContentView(R.layout.popup_prazo_renovacao_expirado)
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-
-        val btnVoltar = dialog.findViewById<MaterialButton>(R.id.buttonVoltarPopupPrazoRenovacao)
-        btnVoltar?.setOnClickListener {
-            dialog.dismiss()
-        }
-        dialog.show()
     }
 }

@@ -9,15 +9,50 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.bibliounifornew.R
+import com.example.bibliounifornew.data.AuthRepository
+import com.example.bibliounifornew.data.UsuarioRepository
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 
 class TelaRF16ListaDesejosActivity : AppCompatActivity() {
 
+    // 1. Instanciando os repositórios de Nuvem
+    private val authRepository = AuthRepository()
+    private val usuarioRepository = UsuarioRepository()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.telarf16_lista_desejos)
 
+        // ----------------------------------------------------
+        // 2. ATUALIZANDO O CABEÇALHO (Adeus, João Bobo!)
+        // ----------------------------------------------------
+        // ATENÇÃO: Confirme no seu XML telarf16_lista_desejos.xml se o ID do TextView do nome é 'textNomeUsuario'
+        val textNomeUsuario = findViewById<TextView>(R.id.textNomeUsuarioDesejos)
+        val usuarioAtual = authRepository.getUsuarioAtual()
+
+        if (usuarioAtual != null) {
+            textNomeUsuario?.text = "Carregando..."
+
+            usuarioRepository.buscarPerfilUsuario(usuarioAtual.uid) { sucesso, dados, erro ->
+                if (sucesso && dados != null) {
+                    val nomeBanco = dados["nome"] as? String ?: "Usuário"
+                    textNomeUsuario?.text = nomeBanco
+                } else {
+                    Toast.makeText(this, "Erro ao carregar perfil: $erro", Toast.LENGTH_SHORT).show()
+                    textNomeUsuario?.text = "Erro"
+                }
+            }
+        } else {
+            // Proteção de rota: Se não estiver logado, volta pro Login
+            startActivity(Intent(this, com.example.bibliounifornew.login.TelaRF03LoginAluno::class.java))
+            finish()
+            return
+        }
+
+        // ----------------------------------------------------
+        // 3. LÓGICA DOS LIVROS (Cards Estáticos)
+        // ----------------------------------------------------
         // Configuração do Livro 1: Vidas Secas (ID: 1)
         configurarLivro(
             cardId = R.id.cardD1,
@@ -94,8 +129,6 @@ class TelaRF16ListaDesejosActivity : AppCompatActivity() {
 
         btnAlugar.setOnClickListener {
             // TODO: Integrar com Banco de Dados para salvar o aluguel do livroId
-            // Por enquanto, apenas simulamos a adição aos livros alugados.
-            
             dialog.dismiss()
             showPopupLivroAdicionado()
         }

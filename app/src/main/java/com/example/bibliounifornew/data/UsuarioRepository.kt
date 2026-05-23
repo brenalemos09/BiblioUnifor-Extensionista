@@ -34,6 +34,28 @@ class UsuarioRepository {
             }
     }
 
+    // Atualiza um campo específico do perfil no banco de dados
+    fun atualizarCampoPerfil(uid: String, campo: String, valor: String, onComplete: (Boolean, String?) -> Unit) {
+        db.collection("usuarios").document(uid)
+            .update(campo, valor)
+            .addOnSuccessListener { onComplete(true, null) }
+            .addOnFailureListener { e -> onComplete(false, e.message) }
+    }
+
+    fun buscarPerfilUsuario(uid: String, onComplete: (Boolean, Map<String, Any>?, String?) -> Unit) {
+        db.collection("usuarios").document(uid).get()
+            .addOnSuccessListener { document ->
+                if (document != null && document.exists()) {
+                    onComplete(true, document.data, null)
+                } else {
+                    onComplete(false, null, "Usuário não encontrado no banco de dados.")
+                }
+            }
+            .addOnFailureListener { exception ->
+                onComplete(false, null, exception.message)
+            }
+    }
+
     fun verificarECriarUsuarioGoogle(
         uid: String,
         nome: String?,
