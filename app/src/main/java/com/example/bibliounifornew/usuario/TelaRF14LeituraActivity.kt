@@ -30,36 +30,29 @@ class TelaRF14LeituraActivity : AppCompatActivity() {
         livroIdAtual = intent.getStringExtra("LIVRO_ID") ?: ""
 
         // ─── BOTÃO ALUGAR ─────────────────────────────────────────────────────
-        // Fluxo: popup de confirmação → grava solicitação_emprestimo → popup de sucesso
         findViewById<Button>(R.id.buttonAlugarLivro).setOnClickListener {
             showPopupAlugar()
         }
 
         // ─── BOTÃO PROCURAR ───────────────────────────────────────────────────
-        // Corrigido: navega para RF11 (Tela de Pesquisa) em vez de RF12
         findViewById<Button>(R.id.buttonProcurarLivro).setOnClickListener {
             startActivity(Intent(this, TelaRF11TelaDePesquisa::class.java))
         }
 
         // ─── BOTÃO ABRIR PDF ──────────────────────────────────────────────────
-        // Intent nativo: abre qualquer leitor de PDF instalado no aparelho
         findViewById<Button>(R.id.buttonAbrirPdfLivro).setOnClickListener {
             abrirPdf()
         }
 
         // ─── BOTÃO ABRIR AUDIOBOOK ────────────────────────────────────────────
-        // Intent nativo: abre qualquer app de áudio/música do aparelho
         findViewById<Button>(R.id.buttonAbrirAudioLivro).setOnClickListener {
             abrirAudiobook()
         }
 
         // ─── BOTÃO SETOR LOCALIZADO ──────────────────────────────────────────
-        // Mantido sem alteração — lógica já estava correta
         findViewById<Button>(R.id.buttonSetorLivro).setOnClickListener {
             showPopupSetor()
         }
-
-        // NOTA: botão "Reservar" foi removido do XML (RF14 revisão)
     }
 
     // ─── POPUP ALUGAR ─────────────────────────────────────────────────────────
@@ -79,7 +72,6 @@ class TelaRF14LeituraActivity : AppCompatActivity() {
 
         btnConfirmar.setOnClickListener {
             dialog.dismiss()
-            // Após confirmação: grava a solicitação no Firestore e exibe sucesso
             gravarSolicitacaoEmprestimo()
         }
         btnCancelar.setOnClickListener { dialog.dismiss() }
@@ -87,10 +79,6 @@ class TelaRF14LeituraActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    /**
-     * Grava um documento em 'solicitacoes_emprestimo' com status "pendente".
-     * Essa coleção será lida futuramente pelas telas do ADM.
-     */
     private fun gravarSolicitacaoEmprestimo() {
         val usuarioAtual = authRepository.getUsuarioAtual()
         if (usuarioAtual == null) {
@@ -145,12 +133,10 @@ class TelaRF14LeituraActivity : AppCompatActivity() {
     // ─── INTENTS NATIVOS DE MÍDIA ─────────────────────────────────────────────
 
     /**
-     * Abre o PDF com Intent.ACTION_VIEW e MIME "application/pdf".
-     * O Android apresenta o chooser com todos os leitores disponíveis no aparelho.
-     * Fallback para browser caso nenhum leitor PDF esteja instalado.
+     * Abre o PDF com Intent.ACTION_VIEW e MIME application/pdf.
      */
     private fun abrirPdf() {
-        val pdfUri = Uri.parse("https://www.google.com") // Substituir pela URL real do PDF do livro
+        val pdfUri = Uri.parse("https://www.google.com") 
         val intent = Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(pdfUri, "application/pdf")
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -159,17 +145,16 @@ class TelaRF14LeituraActivity : AppCompatActivity() {
         if (intent.resolveActivity(packageManager) != null) {
             startActivity(chooser)
         } else {
-            // Fallback: abre no browser se não houver leitor PDF
             startActivity(Intent(Intent.ACTION_VIEW, pdfUri))
         }
     }
 
     /**
-     * Abre o audiobook com Intent.ACTION_VIEW e MIME "audio/*".
+     * Abre o audiobook com Intent.ACTION_VIEW e MIME de áudio.
      * O Android apresenta o chooser com todos os players de áudio do aparelho.
      */
     private fun abrirAudiobook() {
-        val audioUri = Uri.parse("https://www.spotify.com") // Substituir pela URL real do audiobook
+        val audioUri = Uri.parse("https://www.spotify.com")
         val intent = Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(audioUri, "audio/*")
             flags = Intent.FLAG_ACTIVITY_NEW_TASK

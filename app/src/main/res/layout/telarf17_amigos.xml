@@ -121,11 +121,6 @@
             android:paddingHorizontal="32dp"
             android:paddingBottom="100dp">
 
-            <!-- ITEM 1 -->
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="match_parent"
-                android:layout_height="80dp">
-
             <!-- SEÇÃO: Solicitações de Amizade (GONE por padrão; aparece se houver pendências) -->
             <TextView
                 android:id="@+id/textSolicitacoesTitulo"

@@ -42,7 +42,7 @@ class TelaRF15MinhaLivrariaActivity : AppCompatActivity() {
         // ─── BARRA DE NAVEGAÇÃO FIXA (Brena) ──────────────────────────────────
         // Configura a barra inferior unificada para evitar crashes de navegação
         try {
-            com.example.bibliounifornew.util.NavigationHelper.configurarBarraNavegacao(this)
+            NavigationHelper.configurarBarraNavegacao(this)
         } catch (e: Exception) {
             e.printStackTrace()
         }

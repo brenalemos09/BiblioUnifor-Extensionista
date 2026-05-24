@@ -44,9 +44,10 @@ class TelaRF21Historico : AppCompatActivity() {
             return
         }
 
-        // ─── BARRA DE NAVEGAÇÃO FIXA (Brena) ──────────────────────────────────
+        // ─── BARRA DE NAVEGAÇÃO FIXA ──────────────────────────────────────────
         try {
-            com.example.bibliounifornew.util.NavigationHelper.configurarBarraNavegacao(this)
+            // Referência direta ao objeto NavigationHelper no mesmo pacote
+            NavigationHelper.configurarBarraNavegacao(this)
         } catch (e: Exception) {
             e.printStackTrace()
         }

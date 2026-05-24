@@ -60,6 +60,7 @@
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/nestedScrollViewLivraria"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="10dp"
@@ -82,47 +83,47 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/label_meus_livros"
-            android:textColor="@color/biblio_dark"
-            android:textSize="28sp"
-            android:textStyle="bold" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/label_meus_livros"
+                    android:textColor="@color/biblio_dark"
+                    android:textSize="28sp"
+                    android:textStyle="bold" />
 
-        <ImageView
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_marginStart="12dp"
-            android:src="@android:drawable/ic_menu_agenda"
-            app:tint="@color/biblio_dark" />
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="12dp"
+                    android:src="@android:drawable/ic_menu_agenda"
+                    app:tint="@color/biblio_dark" />
 
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
+                <Space
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
 
-        <ImageView
-            android:id="@+id/imgFiltroStatus"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:padding="10dp"
-            android:src="@android:drawable/arrow_down_float"
-            app:tint="@color/biblio_dark" />
+                <ImageView
+                    android:id="@+id/imgFiltroStatus"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:padding="10dp"
+                    android:src="@android:drawable/arrow_down_float"
+                    app:tint="@color/biblio_dark" />
 
-    </LinearLayout>
+            </LinearLayout>
 
-    <!-- LISTA DINÂMICA: livros vindos de biblioteca_usuarios no Firestore -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerViewLivraria"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:paddingBottom="80dp"
-        android:clipToPadding="false"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/layoutToolbarLivraria" />
+            <!-- LISTA DINÂMICA -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerViewLivraria"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clipToPadding="false"
+                android:nestedScrollingEnabled="false"
+                android:paddingBottom="80dp" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 
     <!-- BARRA DE TAREFAS FIXA -->
     <include
