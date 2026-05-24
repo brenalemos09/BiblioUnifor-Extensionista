@@ -175,6 +175,21 @@
 
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- BOTÃO ADICIONAR AMIGO — visível quando ainda não é amigo -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAdicionarAmigoPerfil"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="24dp"
+                android:text="Adicionar Amigo"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:backgroundTint="@color/biblio_blue"
+                app:cornerRadius="28dp"
+                app:elevation="4dp" />
+
         </LinearLayout>
 
     </androidx.core.widget.NestedScrollView>

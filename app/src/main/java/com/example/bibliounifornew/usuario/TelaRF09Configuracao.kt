@@ -12,172 +12,162 @@ import com.example.bibliounifornew.R
 import com.example.bibliounifornew.data.AuthRepository
 import com.example.bibliounifornew.data.UsuarioRepository
 import com.example.bibliounifornew.login.TelaRF01BemVindo
+import com.example.bibliounifornew.login.TelaRF03LoginAluno
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.ListenerRegistration
 
 class TelaRF09Configuracao : AppCompatActivity() {
 
-    // 1. Instanciando os Repositórios e Variáveis Globais
     private val authRepository = AuthRepository()
     private val usuarioRepository = UsuarioRepository()
     private var usuarioAtual: FirebaseUser? = null
+
+    // Listener em tempo real — cancelado em onDestroy para evitar memory leak
+    private var snapshotListener: ListenerRegistration? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.telarf09_configuracao)
 
-        // Pega o usuário logado para usarmos na tela inteira
         usuarioAtual = authRepository.getUsuarioAtual()
 
-        // Mapeamento de Componentes
-        val btnRedefinir = findViewById<MaterialButton>(R.id.buttonRedefinirSenha)
-        val btnApagar = findViewById<MaterialButton>(R.id.buttonApagarConta)
-        val editNome = findViewById<EditText>(R.id.editNome)
-        val editUsuario = findViewById<EditText>(R.id.editUsuario)
-        val editBio = findViewById<EditText>(R.id.editBio)
-        val textEmail = findViewById<TextView>(R.id.textUsuario)
-        val iconEditNome = findViewById<ImageView>(R.id.iconEditNome)
+        // Mapeamento de Views
+        val btnSalvar      = findViewById<MaterialButton>(R.id.buttonSalvarConfig)
+        val btnRedefinir   = findViewById<MaterialButton>(R.id.buttonRedefinirSenha)
+        val btnApagar      = findViewById<MaterialButton>(R.id.buttonApagarConta)
+        val editNome       = findViewById<EditText>(R.id.editNome)
+        val editUsuario    = findViewById<EditText>(R.id.editUsuario)
+        val editBio        = findViewById<EditText>(R.id.editBio)
+        val textEmail      = findViewById<TextView>(R.id.textUsuario)
+        val iconEditNome   = findViewById<ImageView>(R.id.iconEditNome)
         val iconEditUsuario = findViewById<ImageView>(R.id.iconEditUsuario)
-        val iconEditBio = findViewById<ImageView>(R.id.iconEditBio)
-        val editSenhaAtual = findViewById<EditText>(R.id.editSenhaAtual)
-        val iconOlhoSenha = findViewById<ImageView>(R.id.iconOlhoSenhaAtual)
+        val iconEditBio    = findViewById<ImageView>(R.id.iconEditBio)
 
-        // 2. ESTADO INICIAL: Campos desabilitados
-        editNome.isEnabled = false
+        // Estado inicial: campos desabilitados até o lápis ser pressionado
+        editNome.isEnabled    = false
         editUsuario.isEnabled = false
-        editBio.isEnabled = false
-        editSenhaAtual.isEnabled = false
+        editBio.isEnabled     = false
 
-        // 3. CARREGAR DADOS REAIS DO FIREBASE
+        // 1. CARREGAR DADOS VIA SNAPSHOT LISTENER (atualiza em tempo real)
         if (usuarioAtual != null) {
             textEmail?.text = usuarioAtual!!.email
 
-            editNome.setText("Carregando...")
-            editUsuario.setText("...")
-
-            usuarioRepository.buscarPerfilUsuario(usuarioAtual!!.uid) { sucesso, dados, erro ->
-                if (sucesso && dados != null) {
-                    val nomeBanco = dados["nome"] as? String ?: ""
-                    val usernameBanco = dados["usuario"] as? String ?: ""
-                    val bioBanco = dados["biografia"] as? String ?: ""
-
-                    editNome.setText(nomeBanco)
-                    editUsuario.setText(usernameBanco)
-
-                    if (bioBanco.isNotEmpty()) {
-                        editBio.setText(bioBanco)
-                    } else {
-                        editBio.setText("Escreva um pouco sobre você...")
+            snapshotListener = usuarioRepository.observarPerfilUsuario(usuarioAtual!!.uid) { dados ->
+                if (dados != null) {
+                    // Só sobrescreve se o campo NÃO estiver em edição ativa
+                    if (!editNome.isEnabled) {
+                        editNome.setText(dados["nome"] as? String ?: "")
                     }
+                    if (!editUsuario.isEnabled) {
+                        editUsuario.setText(dados["usuario"] as? String ?: "")
+                    }
+                    if (!editBio.isEnabled) {
+                        val bio = dados["biografia"] as? String ?: ""
+                        editBio.setText(bio.ifEmpty { "Escreva um pouco sobre você..." })
+                    }
+                }
+            }
+        } else {
+            startActivity(Intent(this, TelaRF03LoginAluno::class.java))
+            finish()
+            return
+        }
+
+        // 2. LÓGICA DE EDIÇÃO (lápis destrava o campo)
+        configurarIconeEdicao(editNome, iconEditNome)
+        configurarIconeEdicao(editUsuario, iconEditUsuario)
+        configurarIconeEdicao(editBio, iconEditBio)
+
+        // 3. BOTÃO SALVAR — salva todos os campos editáveis de uma vez com merge
+        btnSalvar.setOnClickListener {
+            val uid = usuarioAtual?.uid ?: return@setOnClickListener
+
+            val campos = mapOf(
+                "nome"      to editNome.text.toString().trim(),
+                "usuario"   to editUsuario.text.toString().trim(),
+                "biografia" to editBio.text.toString().trim()
+            )
+
+            btnSalvar.isEnabled = false
+            btnSalvar.text = "Salvando..."
+
+            usuarioRepository.salvarPerfilCompleto(uid, campos) { sucesso, erro ->
+                btnSalvar.isEnabled = true
+                btnSalvar.text = "Salvar Alterações"
+
+                if (sucesso) {
+                    // Trava todos os campos novamente após salvar
+                    editNome.isEnabled    = false
+                    editUsuario.isEnabled = false
+                    editBio.isEnabled     = false
+                    Toast.makeText(this, "Perfil salvo com sucesso!", Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(this, "Erro ao buscar dados: $erro", Toast.LENGTH_SHORT).show()
-                    editNome.setText("")
-                    editUsuario.setText("")
+                    Toast.makeText(this, "Erro ao salvar: $erro", Toast.LENGTH_SHORT).show()
                 }
             }
         }
 
-        // 4. APLICANDO A LÓGICA DE EDIÇÃO INTELIGENTE
-        configurarCampoEditavel(editNome, iconEditNome, "nome")
-        configurarCampoEditavel(editUsuario, iconEditUsuario, "usuario")
-        configurarCampoEditavel(editBio, iconEditBio, "biografia")
-
-        // 5. LÓGICA DO OLHO DA SENHA
-        var senhaVisivel = false
-        iconOlhoSenha.setOnClickListener {
-            senhaVisivel = !senhaVisivel
-            if (senhaVisivel) {
-                editSenhaAtual.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-                iconOlhoSenha.setImageResource(R.drawable.ic_eye_open)
-            } else {
-                editSenhaAtual.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
-                iconOlhoSenha.setImageResource(R.drawable.ic_eye_closed)
-            }
-            editSenhaAtual.setSelection(editSenhaAtual.text.length)
-        }
-
-        // 6. REDEFINIR SENHA (ABRE RF10)
+        // 4. REDEFINIR SENHA (abre RF10)
         btnRedefinir.setOnClickListener {
             startActivity(Intent(this, TelaRF10RedefinirSenha::class.java))
         }
 
-        // 7. APAGAR CONTA
+        // 5. APAGAR CONTA
         btnApagar.setOnClickListener {
             exibirPopupApagarConta()
         }
     }
 
-    // ---------------------------------------------------------
-    // MÉTODOS PRIVADOS DA CLASSE
-    // ---------------------------------------------------------
+    override fun onDestroy() {
+        super.onDestroy()
+        // Crucial: remover o listener para evitar memory leak
+        snapshotListener?.remove()
+    }
 
-    private fun configurarCampoEditavel(editText: EditText, iconEdicao: ImageView, nomeDoCampoNoBanco: String) {
-        // Destrava o campo
-        iconEdicao.setOnClickListener {
+    // Destrava o campo ao clicar no ícone de lápis
+    private fun configurarIconeEdicao(editText: EditText, icone: ImageView) {
+        icone.setOnClickListener {
             editText.isEnabled = true
             editText.requestFocus()
             editText.setSelection(editText.text.length)
-
-            val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+            val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE)
+                    as android.view.inputmethod.InputMethodManager
             imm.showSoftInput(editText, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
-        }
-
-        // Trava e salva ao perder o foco
-        editText.setOnFocusChangeListener { _, hasFocus ->
-            if (!hasFocus && usuarioAtual != null) {
-                editText.isEnabled = false
-                val novoValor = editText.text.toString().trim()
-
-                usuarioRepository.atualizarCampoPerfil(usuarioAtual!!.uid, nomeDoCampoNoBanco, novoValor) { sucesso, erro ->
-                    if (sucesso) {
-                        Toast.makeText(this, "Alteração salva com sucesso!", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(this, "Erro ao salvar: $erro", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
         }
     }
 
     private fun exibirPopupApagarConta() {
         val dialogView = layoutInflater.inflate(R.layout.popup_apagar_conta, null)
-        val builder = AlertDialog.Builder(this)
-        builder.setView(dialogView)
-
+        val builder = AlertDialog.Builder(this).setView(dialogView)
         val dialog = builder.create()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
         val btnConfirmar = dialogView.findViewById<MaterialButton>(R.id.buttonConfirmarApagarConta)
-        val btnCancelar = dialogView.findViewById<TextView>(R.id.textCancelarApagarConta)
-        val editSenha = dialogView.findViewById<EditText>(R.id.editSenhaPopup)
-        val iconOlho = dialogView.findViewById<ImageView>(R.id.iconOlhoSenhaPopup)
+        val btnCancelar  = dialogView.findViewById<TextView>(R.id.textCancelarApagarConta)
+        val editSenha    = dialogView.findViewById<EditText>(R.id.editSenhaPopup)
+        val iconOlho     = dialogView.findViewById<ImageView>(R.id.iconOlhoSenhaPopup)
 
-        var senhaVisivelPopup = false
+        var senhaVisivel = false
         iconOlho.setOnClickListener {
-            senhaVisivelPopup = !senhaVisivelPopup
-            if (senhaVisivelPopup) {
-                editSenha.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-                iconOlho.setImageResource(R.drawable.ic_eye_open)
-            } else {
-                editSenha.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
-                iconOlho.setImageResource(R.drawable.ic_eye_closed)
-            }
+            senhaVisivel = !senhaVisivel
+            editSenha.inputType = if (senhaVisivel)
+                android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+            else
+                android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+            iconOlho.setImageResource(if (senhaVisivel) R.drawable.ic_eye_open else R.drawable.ic_eye_closed)
             editSenha.setSelection(editSenha.text.length)
         }
 
         btnConfirmar.setOnClickListener {
             authRepository.getUsuarioAtual()?.delete()
-
             val intent = Intent(this, TelaRF01BemVindo::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)
             finish()
         }
 
-        btnCancelar.setOnClickListener {
-            dialog.dismiss()
-        }
-
+        btnCancelar.setOnClickListener { dialog.dismiss() }
         dialog.show()
     }
 }
