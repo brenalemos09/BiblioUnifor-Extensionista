@@ -6,32 +6,35 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.bibliounifornew.R
 import com.example.bibliounifornew.data.AuthRepository
+import com.example.bibliounifornew.data.Notificacao
 import com.example.bibliounifornew.data.UsuarioRepository
+import com.google.firebase.firestore.ListenerRegistration
 
 class TelaRF20Notificacoes : AppCompatActivity() {
 
-    private val authRepository = AuthRepository()
+    private val authRepository    = AuthRepository()
     private val usuarioRepository = UsuarioRepository()
+    private lateinit var adapter  : NotificacaoAdapter
+
+    // SnapshotListener — cancelado em onDestroy para evitar memory leak
+    private var snapshotListener: ListenerRegistration? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.telarf20_notificacoes)
 
-        // 1. CABEÇALHO
+        // ─── CABEÇALHO COM ATUALIZAÇÃO EM TEMPO REAL ──────────────────────────
         val textNomeUsuario = findViewById<TextView>(R.id.textNomeNotif)
-        val usuarioAtual = authRepository.getUsuarioAtual()
+        val usuarioAtual    = authRepository.getUsuarioAtual()
 
         if (usuarioAtual != null) {
             textNomeUsuario?.text = "Carregando..."
-            usuarioRepository.buscarPerfilUsuario(usuarioAtual.uid) { sucesso, dados, erro ->
-                if (sucesso && dados != null) {
-                    textNomeUsuario?.text = dados["nome"] as? String ?: "Usuário"
-                } else {
-                    textNomeUsuario?.text = "Erro"
-                }
+            snapshotListener = usuarioRepository.observarPerfilUsuario(usuarioAtual.uid) { dados ->
+                textNomeUsuario?.text = dados?.get("nome") as? String ?: "Usuário"
             }
         } else {
             startActivity(Intent(this, com.example.bibliounifornew.login.TelaRF03LoginAluno::class.java))
@@ -39,20 +42,66 @@ class TelaRF20Notificacoes : AppCompatActivity() {
             return
         }
 
-        // 2. CONFIGURAÇÃO DO SWIPE (Apenas se você já tiver um RecyclerView no XML)
-        // Se você ainda usa LinearLayout no XML, o código abaixo deve ficar comentado
-        // ou você precisará converter o XML para RecyclerView.
-        /*
-        val recyclerView = findViewById<RecyclerView>(R.id.seuRecyclerViewId)
-        val swipeHandler = object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
-            override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean = false
+        // ─── DADOS DE NOTIFICAÇÃO ─────────────────────────────────────────────
+        // Por enquanto populados localmente; o padrão já está pronto para
+        // ser substituído por uma query em "notificacoes_usuarios/{uid}" no Firestore.
+        val notificacoes: MutableList<Notificacao> = mutableListOf(
+            Notificacao(
+                id        = "notif_001",
+                titulo    = "O Ceifador",
+                autor     = "Neal Shusterman",
+                descricao = "Seu livro alugado está disponível para retirada. Prazo: 3 dias úteis.",
+                tempo     = "Hoje",
+                lida      = true,
+                capaResId = R.drawable.o_alienista_capa
+            ),
+            Notificacao(
+                id        = "notif_002",
+                titulo    = "O Senhor dos Anéis",
+                autor     = "J.R.R. Tolkien",
+                descricao = "Seu empréstimo vence em 2 dias. Renove agora para evitar multas.",
+                tempo     = "Ontem",
+                lida      = false,
+                capaResId = R.drawable.osda
+            )
+        )
+
+        // ─── RECYCLERVIEW ─────────────────────────────────────────────────────
+        val recyclerView = findViewById<RecyclerView>(R.id.recyclerViewNotificacoes)
+        recyclerView.layoutManager = LinearLayoutManager(this)
+
+        adapter = NotificacaoAdapter(notificacoes)
+        recyclerView.adapter = adapter
+
+        // ─── SWIPE-TO-DISMISS COM ANIMAÇÃO ────────────────────────────────────
+        val swipeHandler = object : ItemTouchHelper.SimpleCallback(
+            0, // Sem drag (reordenação desativada)
+            ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT // Swipe em ambas as direções
+        ) {
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean = false // Não usamos drag-and-drop
+
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                // Aqui entraria a chamada para o seu adapter: notificacaoAdapter.removerItem(viewHolder.adapterPosition)
-                Toast.makeText(this@TelaRF20Notificacoes, "Notificação removida!", Toast.LENGTH_SHORT).show()
+                val position = viewHolder.adapterPosition
+                if (position != RecyclerView.NO_ID.toInt()) {
+                    adapter.removerItem(position)
+                    Toast.makeText(
+                        this@TelaRF20Notificacoes,
+                        "Notificação descartada",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
         }
-        val itemTouchHelper = ItemTouchHelper(swipeHandler)
-        itemTouchHelper.attachToRecyclerView(recyclerView)
-        */
+
+        ItemTouchHelper(swipeHandler).attachToRecyclerView(recyclerView)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        snapshotListener?.remove()
     }
 }

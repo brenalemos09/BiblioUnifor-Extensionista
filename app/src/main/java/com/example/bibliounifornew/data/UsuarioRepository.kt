@@ -1,6 +1,8 @@
 package com.example.bibliounifornew.data
 
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.SetOptions
 
 class UsuarioRepository {
 
@@ -54,6 +56,78 @@ class UsuarioRepository {
             .addOnFailureListener { exception ->
                 onComplete(false, null, exception.message)
             }
+    }
+
+    /**
+     * Observa o perfil do usuário em tempo real com SnapshotListener.
+     * Retorna um ListenerRegistration que DEVE ser cancelado em onDestroy() da Activity/Fragment.
+     * Uso: snapshotListener = usuarioRepository.observarPerfilUsuario(uid) { dados -> ... }
+     *      snapshotListener?.remove() // no onDestroy
+     */
+    fun observarPerfilUsuario(uid: String, onChange: (Map<String, Any>?) -> Unit): ListenerRegistration {
+        return db.collection("usuarios").document(uid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null || snapshot == null || !snapshot.exists()) {
+                    onChange(null)
+                    return@addSnapshotListener
+                }
+                onChange(snapshot.data)
+            }
+    }
+
+    /**
+     * Salva múltiplos campos do perfil de uma só vez com merge,
+     * preservando campos que não foram alterados.
+     */
+    fun salvarPerfilCompleto(
+        uid: String,
+        campos: Map<String, Any>,
+        onComplete: (Boolean, String?) -> Unit
+    ) {
+        db.collection("usuarios").document(uid)
+            .set(campos, SetOptions.merge())
+            .addOnSuccessListener { onComplete(true, null) }
+            .addOnFailureListener { e -> onComplete(false, e.message) }
+    }
+
+    /**
+     * Remove um item do histórico do usuário no Firestore.
+     * A collection segue o padrão: historico_usuarios/{uid}_{livroId}
+     */
+    fun removerDoHistorico(uid: String, livroId: String, onComplete: (Boolean) -> Unit) {
+        val documentoId = "${uid}_${livroId}"
+        db.collection("historico_usuarios").document(documentoId)
+            .delete()
+            .addOnSuccessListener { onComplete(true) }
+            .addOnFailureListener { onComplete(false) }
+    }
+
+    /**
+     * Salva ou atualiza o item na lista de desejos no Firestore.
+     * Collection: lista_desejos/{uid}_{livroId}
+     */
+    fun salvarListaDesejos(
+        uid: String,
+        livroId: String,
+        dados: Map<String, Any>,
+        onComplete: (Boolean, String?) -> Unit
+    ) {
+        val documentoId = "${uid}_${livroId}"
+        db.collection("lista_desejos").document(documentoId)
+            .set(dados, SetOptions.merge())
+            .addOnSuccessListener { onComplete(true, null) }
+            .addOnFailureListener { e -> onComplete(false, e.message) }
+    }
+
+    /**
+     * Remove item da lista de desejos no Firestore.
+     */
+    fun removerDaListaDesejos(uid: String, livroId: String, onComplete: (Boolean) -> Unit) {
+        val documentoId = "${uid}_${livroId}"
+        db.collection("lista_desejos").document(documentoId)
+            .delete()
+            .addOnSuccessListener { onComplete(true) }
+            .addOnFailureListener { onComplete(false) }
     }
 
     fun verificarECriarUsuarioGoogle(
