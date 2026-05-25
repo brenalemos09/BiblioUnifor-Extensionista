@@ -33,7 +33,6 @@ class ConfirmacaoAdapter(
         val item = lista[position]
         holder.txtNome.text  = item.nome
         holder.txtEmail.text = item.email
-        holder.itemView.setOnClickListener { onClick(item, position) }
     }
 
     override fun getItemCount(): Int = lista.size
