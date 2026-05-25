@@ -3,112 +3,191 @@ package com.example.bibliounifornew.usuario
 import android.content.Intent
 import android.os.Bundle
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import coil.load
 import com.example.bibliounifornew.MainActivity
 import com.example.bibliounifornew.R
 import com.example.bibliounifornew.data.AuthRepository
 import com.example.bibliounifornew.data.UsuarioRepository
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.imageview.ShapeableImageView
+import com.google.firebase.firestore.FieldPath
+import com.google.firebase.firestore.FirebaseFirestore
 
 class TelaRF08DashboardUsuario : AppCompatActivity() {
 
-    // Instanciando os repositórios
-    private val authRepository = AuthRepository()
+    private val authRepository    = AuthRepository()
     private val usuarioRepository = UsuarioRepository()
+    private val db                = FirebaseFirestore.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.telarf08_dashboardusuario)
 
-        // ------------------------------------
-        // CARREGAR DADOS DO USUÁRIO
-        // ------------------------------------
-        val textNomeUsuario = findViewById<TextView>(R.id.textNomeUsuario) // Confirme se este é o ID correto do "João Bobo" no seu XML
-        val uidAtual = authRepository.getUsuarioAtual()?.uid
+        val textNomeUsuario = findViewById<TextView>(R.id.textNomeUsuario)
+        val imagePerfil     = findViewById<ShapeableImageView>(R.id.imagePerfilUsuario)
+        val uidAtual        = authRepository.getUsuarioAtual()?.uid
 
         if (uidAtual != null) {
-            // Se demorar para carregar, pelo menos não fica "João Bobo"
             textNomeUsuario?.text = "Carregando..."
 
             usuarioRepository.buscarPerfilUsuario(uidAtual) { sucesso, dados, erro ->
                 if (sucesso && dados != null) {
-                    val nomeBanco = dados["nome"] as? String ?: "Usuário"
+                    textNomeUsuario?.text = dados["nome"] as? String ?: "Usuário"
 
-                    // Se você quiser mostrar apenas o primeiro nome (ex: "Anderson"):
-                    // val primeiroNome = nomeBanco.split(" ").firstOrNull() ?: "Usuário"
-
-                    textNomeUsuario?.text = nomeBanco
+                    // Carrega foto de perfil se disponível
+                    val fotoUrl = dados["fotoUrl"] as? String ?: ""
+                    if (fotoUrl.isNotEmpty()) {
+                        imagePerfil?.load(fotoUrl) {
+                            placeholder(R.drawable.user_placeholder)
+                            error(R.drawable.user_placeholder)
+                        }
+                    }
                 } else {
                     Toast.makeText(this, "Erro ao carregar perfil: $erro", Toast.LENGTH_SHORT).show()
                     textNomeUsuario?.text = "Erro ao carregar"
                 }
             }
+
+            carregarDescobrir(uidAtual)
         } else {
-            // Se o usuário não estiver logado por algum motivo, chuta ele de volta pro login
             startActivity(Intent(this, com.example.bibliounifornew.login.TelaRF03LoginAluno::class.java))
             finish()
+            return
         }
 
-        // ------------------------------------
-        // COMPONENTES E CLIQUES
-        // ------------------------------------
-        val btnConfig = findViewById<ImageView>(R.id.btnConfig)
-        val btnNotificacao = findViewById<ImageView>(R.id.btnNotificacao)
-        val btnPesquisarLivros = findViewById<MaterialButton>(R.id.btnPesquisarLivros)
+        // ─── NAVEGAÇÃO ────────────────────────────────────────────────────────
+        val btnConfig         = findViewById<ImageView>(R.id.btnConfig)
+        val btnNotificacao    = findViewById<ImageView>(R.id.btnNotificacao)
+        val btnPesquisarLivros        = findViewById<MaterialButton>(R.id.btnPesquisarLivros)
         val btnMinhaLivrariaDashboard = findViewById<MaterialButton>(R.id.btnMinhaLivraria)
-        val btnListaDesejo = findViewById<MaterialButton>(R.id.btnListaDesejos)
-        val btnAmigosDashboard = findViewById<MaterialButton>(R.id.btnAmigos)
-        val btnHistoricoDashboard = findViewById<MaterialButton>(R.id.btnHistorico)
-        val btnStatusAluguel = findViewById<MaterialButton>(R.id.btnStatusAluguel)
-        val btnSair = findViewById<MaterialButton>(R.id.btnSairConta)
-        val imgLivroAlienista = findViewById<ImageView>(R.id.imgLivroAlienista)
+        val btnListaDesejo            = findViewById<MaterialButton>(R.id.btnListaDesejos)
+        val btnAmigosDashboard        = findViewById<MaterialButton>(R.id.btnAmigos)
+        val btnHistoricoDashboard     = findViewById<MaterialButton>(R.id.btnHistorico)
+        val btnStatusAluguel          = findViewById<MaterialButton>(R.id.btnStatusAluguel)
+        val btnSair                   = findViewById<MaterialButton>(R.id.btnSairConta)
 
-        btnConfig.setOnClickListener { startActivity(Intent(this, TelaRF09Configuracao::class.java)) }
-        btnNotificacao.setOnClickListener { startActivity(Intent(this, TelaRF20Notificacoes::class.java)) }
-        btnPesquisarLivros.setOnClickListener { startActivity(Intent(this, TelaRF11TelaDePesquisa::class.java)) }
+        btnConfig.setOnClickListener         { startActivity(Intent(this, TelaRF09Configuracao::class.java)) }
+        btnNotificacao.setOnClickListener    { startActivity(Intent(this, TelaRF20Notificacoes::class.java)) }
+        btnPesquisarLivros.setOnClickListener        { startActivity(Intent(this, TelaRF11TelaDePesquisa::class.java)) }
         btnMinhaLivrariaDashboard.setOnClickListener { startActivity(Intent(this, TelaRF15MinhaLivrariaActivity::class.java)) }
-        btnListaDesejo.setOnClickListener { startActivity(Intent(this, TelaRF16ListaDesejosActivity::class.java)) }
-        btnAmigosDashboard.setOnClickListener { startActivity(Intent(this, TelaRF17Amigos::class.java)) }
-        btnHistoricoDashboard.setOnClickListener { startActivity(Intent(this, TelaRF21Historico::class.java)) }
-        btnStatusAluguel.setOnClickListener { startActivity(Intent(this, TelaRF18StatusAluguel::class.java)) }
+        btnListaDesejo.setOnClickListener            { startActivity(Intent(this, TelaRF16ListaDesejosActivity::class.java)) }
+        btnAmigosDashboard.setOnClickListener        { startActivity(Intent(this, TelaRF17Amigos::class.java)) }
+        btnHistoricoDashboard.setOnClickListener     { startActivity(Intent(this, TelaRF21Historico::class.java)) }
+        btnStatusAluguel.setOnClickListener          { startActivity(Intent(this, TelaRF18StatusAluguel::class.java)) }
+        btnSair.setOnClickListener                   { showExitPopup() }
 
-        // Sair desloga do Firebase antes de voltar para o menu inicial
-        btnSair.setOnClickListener { showExitPopup() }
-
-        imgLivroAlienista.setOnClickListener {
-            val intent = Intent(this, TelaRF12TelaDoLivro::class.java)
-            intent.putExtra("LIVRO_ID", "1")
-            startActivity(intent)
-        }
-
-        // Configurar Barra de Navegação
         NavigationHelper.configurarBarraNavegacao(this)
     }
 
+    // ─── SEÇÃO DESCOBRIR ──────────────────────────────────────────────────────
+
+    /**
+     * Passo 1: busca livros que o usuário já tem na biblioteca para descobrir a categoria favorita.
+     * Se não houver histórico, carrega livros sem filtro de categoria.
+     */
+    private fun carregarDescobrir(uid: String) {
+        db.collection("biblioteca_usuarios")
+            .whereEqualTo("usuarioId", uid)
+            .limit(20)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val livroIds = snapshot.documents.mapNotNull { it.getString("livroId") }.distinct()
+                if (livroIds.isEmpty()) {
+                    carregarLivrosDescobrir(null)
+                    return@addOnSuccessListener
+                }
+                // Passo 2: descobre categorias dos livros do usuário
+                db.collection("livros")
+                    .whereIn(FieldPath.documentId(), livroIds.take(10))
+                    .get()
+                    .addOnSuccessListener { livrosSnap ->
+                        val categoria = livrosSnap.documents
+                            .mapNotNull { it.getString("category") ?: it.getString("categoria") }
+                            .groupingBy { it }
+                            .eachCount()
+                            .maxByOrNull { it.value }
+                            ?.key
+                        carregarLivrosDescobrir(categoria)
+                    }
+                    .addOnFailureListener { carregarLivrosDescobrir(null) }
+            }
+            .addOnFailureListener { carregarLivrosDescobrir(null) }
+    }
+
+    /**
+     * Passo 2: monta os cards dinâmicos no containerDescobrir.
+     * Se categoria for null, exibe qualquer livro do Firestore.
+     */
+    private fun carregarLivrosDescobrir(categoria: String?) {
+        val container = findViewById<LinearLayout>(R.id.containerDescobrir) ?: return
+        container.removeAllViews()
+
+        val query = if (!categoria.isNullOrEmpty()) {
+            db.collection("livros").whereEqualTo("category", categoria).limit(10)
+        } else {
+            db.collection("livros").limit(10)
+        }
+
+        query.get()
+            .addOnSuccessListener { snapshot ->
+                if (snapshot.isEmpty) return@addOnSuccessListener
+                for (doc in snapshot.documents) {
+                    val titulo   = doc.getString("title")    ?: doc.getString("titulo")  ?: "Sem título"
+                    val autor    = doc.getString("author")   ?: doc.getString("autor")   ?: ""
+                    val coverUrl = doc.getString("coverUrl") ?: ""
+                    val livroId  = doc.id
+
+                    val cardView  = layoutInflater.inflate(R.layout.item_livro_descobrir, container, false)
+                    val imgCapa   = cardView.findViewById<ImageView>(R.id.imgCapaDescobrir)
+                    val txtTitulo = cardView.findViewById<TextView>(R.id.txtTituloDescobrir)
+                    val txtAutor  = cardView.findViewById<TextView>(R.id.txtAutorDescobrir)
+
+                    if (coverUrl.isNotEmpty()) {
+                        imgCapa.load(coverUrl) {
+                            placeholder(R.drawable.osda)
+                            error(R.drawable.osda)
+                        }
+                    } else {
+                        imgCapa.setImageResource(R.drawable.osda)
+                    }
+                    txtTitulo.text = titulo
+                    txtAutor.text  = autor
+
+                    cardView.setOnClickListener {
+                        startActivity(
+                            Intent(this, TelaRF12TelaDoLivro::class.java)
+                                .putExtra("LIVRO_ID", livroId)
+                        )
+                    }
+                    container.addView(cardView)
+                }
+            }
+            .addOnFailureListener { /* ignora silenciosamente */ }
+    }
+
+    // ─── POPUP SAIR ───────────────────────────────────────────────────────────
+
     private fun showExitPopup() {
         val dialogView = layoutInflater.inflate(R.layout.popup_sair_conta, null)
-        val builder = AlertDialog.Builder(this)
+        val builder    = AlertDialog.Builder(this)
         builder.setView(dialogView)
         val dialog = builder.create()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
-        // Confirmar saída
         dialogView.findViewById<MaterialButton>(R.id.btnConfirmarSair).setOnClickListener {
             dialog.dismiss()
-
-            // OBRIGATÓRIO: Deslogar a sessão do Firebase
             com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
-
             val intentSair = Intent(this, MainActivity::class.java)
             intentSair.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intentSair)
             finish()
         }
 
-        // Cancelar
         dialogView.findViewById<TextView>(R.id.btnCancelarSair).setOnClickListener {
             dialog.dismiss()
         }

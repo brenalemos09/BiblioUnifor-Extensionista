@@ -1,8 +1,12 @@
 package com.example.bibliounifornew.usuario
 
 import android.content.Intent
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.os.Bundle
+import android.view.View
 import android.widget.ImageView
+import android.widget.RatingBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -32,6 +36,7 @@ class TelaRF12TelaDoLivro : AppCompatActivity() {
 
         if (livroIdAtual.isNotEmpty()) {
             carregarDadosDoLivro(livroIdAtual)
+            carregarNota()
         }
 
         configurarBotoesDeStatus()
@@ -65,10 +70,66 @@ class TelaRF12TelaDoLivro : AppCompatActivity() {
                 } else {
                     imgCapa?.setImageResource(R.drawable.osda)
                 }
+
+                // ── Categoria ─────────────────────────────────────────────────
+                val categoria = doc.getString("category") ?: doc.getString("categoria") ?: ""
+                if (categoria.isNotEmpty()) {
+                    findViewById<MaterialButton>(R.id.buttonGenero)?.text = categoria
+                }
+
+                // ── Estoque / Disponibilidade ──────────────────────────────────
+                val estoque    = doc.getLong("estoque") ?: doc.getLong("quantidade")
+                    ?: doc.getLong("stock") ?: 0L
+                val txtDisp    = findViewById<TextView>(R.id.textDisponivel)
+                val txtEstoque = findViewById<TextView>(R.id.textEstoque)
+                val indicador  = findViewById<View>(R.id.statusIndicator)
+
+                if (estoque > 0L) {
+                    txtDisp?.text = "Disponível para aluguel"
+                    txtDisp?.setTextColor(Color.parseColor("#2E7D32"))
+                    txtEstoque?.text = "$estoque unidade${if (estoque == 1L) "" else "s"} em estoque"
+                    indicador?.backgroundTintList =
+                        ColorStateList.valueOf(Color.parseColor("#4CAF50"))
+                } else {
+                    txtDisp?.text = "Indisponível no momento"
+                    txtDisp?.setTextColor(Color.parseColor("#C62828"))
+                    txtEstoque?.text = "Sem estoque"
+                    indicador?.backgroundTintList =
+                        ColorStateList.valueOf(Color.parseColor("#C62828"))
+                }
             }
             .addOnFailureListener {
                 Toast.makeText(this, "Erro ao carregar livro.", Toast.LENGTH_SHORT).show()
             }
+    }
+
+    // ─── NOTA DO USUÁRIO ──────────────────────────────────────────────────────
+
+    private fun carregarNota() {
+        if (livroIdAtual.isEmpty()) return
+        val uid      = authRepository.getUsuarioAtual()?.uid ?: return
+        val ratingBar = findViewById<RatingBar>(R.id.ratingBarLivro) ?: return
+
+        // Carrega nota salva anteriormente
+        db.collection("biblioteca_usuarios").document("${uid}_${livroIdAtual}").get()
+            .addOnSuccessListener { doc ->
+                ratingBar.rating = doc.getDouble("nota")?.toFloat() ?: 0f
+            }
+
+        // Salva quando o usuário toca nas estrelas
+        ratingBar.setOnRatingBarChangeListener { _, rating, fromUser ->
+            if (!fromUser) return@setOnRatingBarChangeListener
+            db.collection("biblioteca_usuarios").document("${uid}_${livroIdAtual}")
+                .set(
+                    hashMapOf(
+                        "usuarioId"    to uid,
+                        "livroId"      to livroIdAtual,
+                        "nota"         to rating.toDouble(),
+                        "atualizadoEm" to System.currentTimeMillis()
+                    ),
+                    SetOptions.merge()
+                )
+        }
     }
 
     // ─── BOTÕES DE STATUS DE LEITURA ─────────────────────────────────────────

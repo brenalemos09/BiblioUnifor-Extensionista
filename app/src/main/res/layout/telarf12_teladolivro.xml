@@ -45,7 +45,7 @@
                 android:id="@+id/textTituloLivro"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/titulo_livro"
+                android:text=""
                 android:textColor="@color/biblio_dark"
                 android:textStyle="bold"
                 android:textSize="26sp" />
@@ -54,7 +54,7 @@
                 android:id="@+id/textAutorLivro"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/autor_machado"
+                android:text=""
                 android:textColor="#757575"
                 android:textSize="18sp"
                 android:layout_marginTop="4dp" />
@@ -227,13 +227,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:numStars="5"
-                android:rating="4"
+                android:rating="0"
+                android:stepSize="1"
                 android:scaleX="0.8"
                 android:scaleY="0.8"
                 android:transformPivotX="0dp"
                 android:progressTint="@color/biblio_detalhes"
-                android:layout_marginTop="4dp"
-                style="?android:attr/ratingBarStyleIndicator"/>
+                android:layout_marginTop="4dp" />
 
             <!-- DISPONIBILIDADE -->
             <com.google.android.material.card.MaterialCardView
@@ -299,7 +299,7 @@
                 android:id="@+id/textSobreLivro"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/sinopse_alienista"
+                android:text=""
                 android:textColor="#616161"
                 android:textSize="15sp"
                 android:lineSpacingExtra="5sp"
@@ -318,7 +318,7 @@
                     style="@style/Widget.MaterialComponents.Button.TextButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/genero_ficcao_psicologica"
+                    android:text=""
                     android:textAllCaps="false"
                     android:textColor="@color/biblio_dark"
                     android:backgroundTint="#F5F5F5"
@@ -342,7 +342,7 @@
                 android:id="@+id/textAvaliacoes"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/label_avaliacoes_count"
+                android:text=""
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="@color/biblio_dark"

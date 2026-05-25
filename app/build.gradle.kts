@@ -58,6 +58,7 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.messaging)
+    implementation("com.google.firebase:firebase-storage")
 
     // Android UI e Core
     implementation(libs.androidx.activity.ktx)

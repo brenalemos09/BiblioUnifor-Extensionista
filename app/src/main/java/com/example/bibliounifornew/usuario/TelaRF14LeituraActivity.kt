@@ -27,6 +27,7 @@ class TelaRF14LeituraActivity : AppCompatActivity() {
     /** URLs de mídia — populadas por carregarCabecalho(), usadas pelos botões */
     private var linkPdfAtual   : String = ""
     private var linkAudioAtual : String = ""
+    private var tituloAtual    : String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,6 +83,7 @@ class TelaRF14LeituraActivity : AppCompatActivity() {
                 val coverUrl  = doc.getString("coverUrl") ?: ""
 
                 // Armazena para uso posterior nos listeners dos botões
+                tituloAtual    = titulo
                 linkPdfAtual   = doc.getString("linkPdf")      ?: ""
                 linkAudioAtual = doc.getString("linkAudiobook") ?: ""
 
@@ -146,6 +148,9 @@ class TelaRF14LeituraActivity : AppCompatActivity() {
             WindowManager.LayoutParams.WRAP_CONTENT
         )
 
+        dialog.findViewById<TextView>(R.id.textTituloPopupAlugar)?.text =
+            "Você deseja alugar o livro\n\"${tituloAtual.ifEmpty { "este livro" }}\"?"
+
         val btnConfirmar = dialog.findViewById<Button>(R.id.buttonAdicionarLivro)
         val btnCancelar  = dialog.findViewById<TextView>(R.id.textCancelarPopup)
 
@@ -174,9 +179,12 @@ class TelaRF14LeituraActivity : AppCompatActivity() {
 
         db.collection("solicitacoes_emprestimo")
             .add(dados)
-            .addOnSuccessListener { showPopupSucesso() }
+            .addOnSuccessListener {
+                if (!isFinishing && !isDestroyed) showPopupSucesso()
+            }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Erro ao registrar solicitação: ${e.message}", Toast.LENGTH_SHORT).show()
+                if (!isFinishing && !isDestroyed)
+                    Toast.makeText(this, "Erro ao registrar solicitação: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
 

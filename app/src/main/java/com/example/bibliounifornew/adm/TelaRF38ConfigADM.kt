@@ -2,16 +2,22 @@ package com.example.bibliounifornew.adm
 
 import android.app.Dialog
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
+import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.text.InputType
 import android.view.Window
 import android.view.WindowManager
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import coil.load
 import com.example.bibliounifornew.R
 import com.example.bibliounifornew.login.TelaRF01BemVindo
 import com.google.android.material.button.MaterialButton
@@ -20,11 +26,18 @@ import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.storage.FirebaseStorage
+import java.io.ByteArrayOutputStream
 
 class TelaRF38ConfigADM : AppCompatActivity() {
 
     private val auth = FirebaseAuth.getInstance()
     private val db   = FirebaseFirestore.getInstance()
+
+    // Launcher de galeria — registrado antes de onCreate
+    private val galeria = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let { fazerUploadFoto(it) }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,14 +45,15 @@ class TelaRF38ConfigADM : AppCompatActivity() {
 
         val editNome    = findViewById<EditText>(R.id.editNomeAdm)
         val editUsuario = findViewById<EditText>(R.id.editUsuarioAdm)
+        val imageFoto   = findViewById<ImageView>(R.id.imageFotoAdm)
 
         val btnSalvar        = findViewById<MaterialButton>(R.id.btnSalvarAlteracoes)
         val btnRedefinirSenha = findViewById<MaterialButton>(R.id.btnRedefinirSenha)
         val btnApagarConta   = findViewById<MaterialButton>(R.id.btnApagarConta)
 
         // ── Olho para campo senha (decorativo, desabilitado) ──────────────────
-        val editSenhaAtual  = findViewById<EditText>(R.id.editSenhaAtual)
-        val iconOlhoSenha   = findViewById<ImageView>(R.id.iconOlhoSenhaAtual)
+        val editSenhaAtual = findViewById<EditText>(R.id.editSenhaAtual)
+        val iconOlhoSenha  = findViewById<ImageView>(R.id.iconOlhoSenhaAtual)
         editSenhaAtual.isEnabled = false
 
         var senhaVisivel = false
@@ -60,7 +74,27 @@ class TelaRF38ConfigADM : AppCompatActivity() {
                 .addOnSuccessListener { doc ->
                     editNome.setText(doc.getString("nome")    ?: "")
                     editUsuario.setText(doc.getString("usuario") ?: "")
+                    // Carrega foto de perfil se disponível
+                    val fotoUrl = doc.getString("fotoUrl") ?: ""
+                    if (fotoUrl.isNotEmpty()) {
+                        imageFoto?.load(fotoUrl) {
+                            placeholder(R.drawable.user_placeholder)
+                            error(R.drawable.user_placeholder)
+                        }
+                    }
                 }
+        }
+
+        // ── Clique na foto de perfil ──────────────────────────────────────────
+        imageFoto?.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("Foto de Perfil")
+                .setMessage("Deseja mudar sua foto?")
+                .setPositiveButton("Escolher da Galeria") { _, _ ->
+                    galeria.launch("image/*")
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
         }
 
         // ── Salvar alterações de perfil ───────────────────────────────────────
@@ -101,9 +135,62 @@ class TelaRF38ConfigADM : AppCompatActivity() {
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // POPUP APAGAR CONTA — re-autentica antes de deletar
-    // ─────────────────────────────────────────────────────────────────────────
+    // ─── UPLOAD DE FOTO ───────────────────────────────────────────────────────
+
+    private fun fazerUploadFoto(uri: Uri) {
+        val uid       = auth.currentUser?.uid ?: return
+        val imageFoto = findViewById<ImageView>(R.id.imageFotoAdm)
+
+        try {
+            @Suppress("DEPRECATION")
+            val bitmap         = MediaStore.Images.Media.getBitmap(contentResolver, uri)
+            val redimensionado = Bitmap.createScaledBitmap(bitmap, 200, 200, true)
+            val baos           = ByteArrayOutputStream()
+            redimensionado.compress(Bitmap.CompressFormat.JPEG, 85, baos)
+            val bytes = baos.toByteArray()
+
+            val storageRef = FirebaseStorage.getInstance().reference
+                .child("fotos_perfil/$uid.jpg")
+
+            imageFoto?.alpha = 0.5f
+
+            storageRef.putBytes(bytes)
+                .continueWithTask { task ->
+                    if (!task.isSuccessful) throw task.exception!!
+                    storageRef.downloadUrl
+                }
+                .addOnSuccessListener { downloadUri ->
+                    if (isFinishing || isDestroyed) return@addOnSuccessListener
+                    val fotoUrl = downloadUri.toString()
+                    db.collection("usuarios").document(uid)
+                        .update("fotoUrl", fotoUrl)
+                        .addOnSuccessListener {
+                            if (isFinishing || isDestroyed) return@addOnSuccessListener
+                            imageFoto?.alpha = 1f
+                            imageFoto?.load(fotoUrl) {
+                                placeholder(R.drawable.user_placeholder)
+                                error(R.drawable.user_placeholder)
+                            }
+                            Toast.makeText(this, "Foto atualizada com sucesso!", Toast.LENGTH_SHORT).show()
+                        }
+                        .addOnFailureListener {
+                            if (isFinishing || isDestroyed) return@addOnFailureListener
+                            imageFoto?.alpha = 1f
+                            Toast.makeText(this, "Erro ao salvar URL da foto.", Toast.LENGTH_SHORT).show()
+                        }
+                }
+                .addOnFailureListener { e ->
+                    if (isFinishing || isDestroyed) return@addOnFailureListener
+                    imageFoto?.alpha = 1f
+                    Toast.makeText(this, "Erro no upload: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+        } catch (e: Exception) {
+            Toast.makeText(this, "Erro ao processar imagem.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // ─── POPUP APAGAR CONTA — re-autentica antes de deletar ──────────────────
+
     private fun exibirPopupApagarConta(uid: String?) {
         val dialog = Dialog(this)
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -134,16 +221,13 @@ class TelaRF38ConfigADM : AppCompatActivity() {
 
             btnConfirmar.isEnabled = false
 
-            // ── 1. Re-autenticar ──────────────────────────────────────────────
             val credencial = EmailAuthProvider.getCredential(email, senha)
             currentUser.reauthenticate(credencial)
                 .addOnSuccessListener {
-                    // ── 2. Deletar documento Firestore ────────────────────────
                     val firestoreDelete = if (!uid.isNullOrEmpty()) {
                         db.collection("usuarios").document(uid).delete()
                     } else null
 
-                    // ── 3. Deletar usuário Firebase Auth ──────────────────────
                     currentUser.delete()
                         .addOnSuccessListener {
                             firestoreDelete?.addOnFailureListener { /* silencia erro de limpeza */ }
@@ -158,7 +242,7 @@ class TelaRF38ConfigADM : AppCompatActivity() {
                             Toast.makeText(this, "Erro ao apagar conta: ${e.message}", Toast.LENGTH_SHORT).show()
                         }
                 }
-                .addOnFailureListener { e ->
+                .addOnFailureListener {
                     btnConfirmar.isEnabled = true
                     Toast.makeText(this, "Senha incorreta ou sessão expirada.", Toast.LENGTH_SHORT).show()
                 }
