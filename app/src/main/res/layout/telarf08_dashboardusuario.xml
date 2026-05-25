@@ -212,53 +212,12 @@
                     android:scrollbars="none">
 
                     <LinearLayout
+                        android:id="@+id/containerDescobrir"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal">
 
-
-                        <!-- LIVRO -->
-
-                        <androidx.cardview.widget.CardView
-                            android:layout_width="170dp"
-                            android:layout_height="wrap_content"
-                            app:cardCornerRadius="12dp"
-                            app:cardElevation="5dp">
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:orientation="vertical"
-                                android:gravity="center"
-                                android:padding="12dp">
-
-                                <ImageView
-                                    android:id="@+id/imgLivroAlienista"
-                                    android:layout_width="110dp"
-                                    android:layout_height="160dp"
-                                    android:src="@drawable/o_alienista_capa"
-                                    android:contentDescription="@string/desc_livro"/>
-
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/titulo_livro"
-                                    android:textStyle="bold"
-                                    android:textSize="18sp"/>
-
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/autor_machado"
-                                    android:textColor="#666"/>
-
-
-                            </LinearLayout>
-
-                        </androidx.cardview.widget.CardView>
-
+                        <!-- Cards adicionados dinamicamente por TelaRF08DashboardUsuario -->
 
                     </LinearLayout>
 

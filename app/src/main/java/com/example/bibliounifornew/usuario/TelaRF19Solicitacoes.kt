@@ -15,25 +15,30 @@ class TelaRF19Solicitacoes : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.telarf19_solicitacoes)
 
-        val btnPdf = findViewById<Button>(R.id.buttonSolicitarPdf)
-        val btnBraile = findViewById<Button>(R.id.buttonSolicitarBraille)
-        val btnAudio = findViewById<Button>(R.id.buttonSolicitarAudiobook)
+        // Recebe o ID do livro da tela anterior (RF12)
+        val livroId = intent.getStringExtra("LIVRO_ID") ?: ""
+
+        val btnPdf      = findViewById<Button>(R.id.buttonSolicitarPdf)
+        val btnBraile   = findViewById<Button>(R.id.buttonSolicitarBraille)
+        val btnAudio    = findViewById<Button>(R.id.buttonSolicitarAudiobook)
         val btnReservar = findViewById<Button>(R.id.buttonReservarLivro)
-        val btnSetor = findViewById<Button>(R.id.buttonSetorLocalizado)
+        val btnSetor    = findViewById<Button>(R.id.buttonSetorLocalizado)
 
-        // Todos levam para Termos e Condições
-        val clickParaTermos = {
-            startActivity(Intent(this, TelaRF19SolicitacoesTermosCondicoes::class.java))
+        // Cada botão navega para Termos passando o tipo correto e o livroId
+        fun irParaTermos(tipoMidia: String) {
+            startActivity(
+                Intent(this, TelaRF19SolicitacoesTermosCondicoes::class.java)
+                    .putExtra("TIPO_MIDIA", tipoMidia)
+                    .putExtra("LIVRO_ID",   livroId)
+            )
         }
 
-        btnPdf?.setOnClickListener { clickParaTermos() }
-        btnBraile?.setOnClickListener { clickParaTermos() }
-        btnAudio?.setOnClickListener { clickParaTermos() }
-        btnReservar?.setOnClickListener { clickParaTermos() }
+        btnPdf?.setOnClickListener      { irParaTermos("PDF")       }
+        btnBraile?.setOnClickListener   { irParaTermos("Braille")   }
+        btnAudio?.setOnClickListener    { irParaTermos("Audiobook") }
+        btnReservar?.setOnClickListener { irParaTermos("Reserva")   }
 
-        btnSetor?.setOnClickListener {
-            showPopupSetor()
-        }
+        btnSetor?.setOnClickListener { showPopupSetor() }
     }
 
     private fun showPopupSetor() {
@@ -43,9 +48,7 @@ class TelaRF19Solicitacoes : AppCompatActivity() {
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
         val btnVoltar = dialog.findViewById<Button>(R.id.buttonVoltarSetor)
-        btnVoltar.setOnClickListener {
-            dialog.dismiss()
-        }
+        btnVoltar.setOnClickListener { dialog.dismiss() }
 
         dialog.show()
     }

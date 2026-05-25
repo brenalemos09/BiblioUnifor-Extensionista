@@ -1,30 +1,45 @@
 package com.example.bibliounifornew.usuario
 
 import android.content.Intent
+import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import coil.load
 import com.example.bibliounifornew.R
 import com.example.bibliounifornew.data.AuthRepository
 import com.example.bibliounifornew.data.UsuarioRepository
 import com.example.bibliounifornew.login.TelaRF01BemVindo
 import com.example.bibliounifornew.login.TelaRF03LoginAluno
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.imageview.ShapeableImageView
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.storage.FirebaseStorage
+import java.io.ByteArrayOutputStream
 
 class TelaRF09Configuracao : AppCompatActivity() {
 
-    private val authRepository = AuthRepository()
+    private val authRepository    = AuthRepository()
     private val usuarioRepository = UsuarioRepository()
-    private var usuarioAtual: FirebaseUser? = null
+    private val db                = FirebaseFirestore.getInstance()
+    private var usuarioAtual      : FirebaseUser? = null
 
     // Listener em tempo real — cancelado em onDestroy para evitar memory leak
-    private var snapshotListener: ListenerRegistration? = null
+    private var snapshotListener  : ListenerRegistration? = null
+
+    // Launcher de galeria — registrado antes de onCreate
+    private val galeria = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let { fazerUploadFoto(it) }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,30 +47,30 @@ class TelaRF09Configuracao : AppCompatActivity() {
 
         usuarioAtual = authRepository.getUsuarioAtual()
 
-        // Mapeamento de Views
-        val btnSalvar      = findViewById<MaterialButton>(R.id.buttonSalvarConfig)
-        val btnRedefinir   = findViewById<MaterialButton>(R.id.buttonRedefinirSenha)
-        val btnApagar      = findViewById<MaterialButton>(R.id.buttonApagarConta)
-        val editNome       = findViewById<EditText>(R.id.editNome)
-        val editUsuario    = findViewById<EditText>(R.id.editUsuario)
-        val editBio        = findViewById<EditText>(R.id.editBio)
-        val textEmail      = findViewById<TextView>(R.id.textUsuario)
-        val iconEditNome   = findViewById<ImageView>(R.id.iconEditNome)
+        // ── Mapeamento de views ───────────────────────────────────────────────
+        val btnSalvar       = findViewById<MaterialButton>(R.id.buttonSalvarConfig)
+        val btnRedefinir    = findViewById<MaterialButton>(R.id.buttonRedefinirSenha)
+        val btnApagar       = findViewById<MaterialButton>(R.id.buttonApagarConta)
+        val editNome        = findViewById<EditText>(R.id.editNome)
+        val editUsuario     = findViewById<EditText>(R.id.editUsuario)
+        val editBio         = findViewById<EditText>(R.id.editBio)
+        val textEmail       = findViewById<TextView>(R.id.textUsuario)
+        val iconEditNome    = findViewById<ImageView>(R.id.iconEditNome)
         val iconEditUsuario = findViewById<ImageView>(R.id.iconEditUsuario)
-        val iconEditBio    = findViewById<ImageView>(R.id.iconEditBio)
+        val iconEditBio     = findViewById<ImageView>(R.id.iconEditBio)
+        val imagePerfil     = findViewById<ShapeableImageView>(R.id.imagePerfilUsuario)
 
-        // Estado inicial: campos desabilitados até o lápis ser pressionado
+        // Estado inicial: campos bloqueados até o lápis ser pressionado
         editNome.isEnabled    = false
         editUsuario.isEnabled = false
         editBio.isEnabled     = false
 
-        // 1. CARREGAR DADOS VIA SNAPSHOT LISTENER (atualiza em tempo real)
+        // ── 1. Carregar dados via Snapshot Listener ───────────────────────────
         if (usuarioAtual != null) {
             textEmail?.text = usuarioAtual!!.email
 
             snapshotListener = usuarioRepository.observarPerfilUsuario(usuarioAtual!!.uid) { dados ->
                 if (dados != null) {
-                    // Só sobrescreve se o campo NÃO estiver em edição ativa
                     if (!editNome.isEnabled) {
                         editNome.setText(dados["nome"] as? String ?: "")
                     }
@@ -66,6 +81,14 @@ class TelaRF09Configuracao : AppCompatActivity() {
                         val bio = dados["biografia"] as? String ?: ""
                         editBio.setText(bio.ifEmpty { "Escreva um pouco sobre você..." })
                     }
+                    // Carrega foto de perfil se disponível
+                    val fotoUrl = dados["fotoUrl"] as? String ?: ""
+                    if (fotoUrl.isNotEmpty()) {
+                        imagePerfil?.load(fotoUrl) {
+                            placeholder(R.drawable.user_placeholder)
+                            error(R.drawable.user_placeholder)
+                        }
+                    }
                 }
             }
         } else {
@@ -74,30 +97,25 @@ class TelaRF09Configuracao : AppCompatActivity() {
             return
         }
 
-        // 2. LÓGICA DE EDIÇÃO (lápis destrava o campo)
+        // ── 2. Lógica de edição (lápis destrava o campo) ─────────────────────
         configurarIconeEdicao(editNome, iconEditNome)
         configurarIconeEdicao(editUsuario, iconEditUsuario)
         configurarIconeEdicao(editBio, iconEditBio)
 
-        // 3. BOTÃO SALVAR — salva todos os campos editáveis de uma vez com merge
+        // ── 3. Botão Salvar ───────────────────────────────────────────────────
         btnSalvar.setOnClickListener {
             val uid = usuarioAtual?.uid ?: return@setOnClickListener
-
             val campos = mapOf(
                 "nome"      to editNome.text.toString().trim(),
                 "usuario"   to editUsuario.text.toString().trim(),
                 "biografia" to editBio.text.toString().trim()
             )
-
             btnSalvar.isEnabled = false
-            btnSalvar.text = "Salvando..."
-
+            btnSalvar.text      = "Salvando..."
             usuarioRepository.salvarPerfilCompleto(uid, campos) { sucesso, erro ->
                 btnSalvar.isEnabled = true
-                btnSalvar.text = "Salvar Alterações"
-
+                btnSalvar.text      = "Salvar Alterações"
                 if (sucesso) {
-                    // Trava todos os campos novamente após salvar
                     editNome.isEnabled    = false
                     editUsuario.isEnabled = false
                     editBio.isEnabled     = false
@@ -108,24 +126,88 @@ class TelaRF09Configuracao : AppCompatActivity() {
             }
         }
 
-        // 4. REDEFINIR SENHA (abre RF10)
+        // ── 4. Redefinir senha → RF10 ─────────────────────────────────────────
         btnRedefinir.setOnClickListener {
             startActivity(Intent(this, TelaRF10RedefinirSenha::class.java))
         }
 
-        // 5. APAGAR CONTA
-        btnApagar.setOnClickListener {
-            exibirPopupApagarConta()
+        // ── 5. Apagar conta ───────────────────────────────────────────────────
+        btnApagar.setOnClickListener { exibirPopupApagarConta() }
+
+        // ── 6. Clique na foto de perfil ───────────────────────────────────────
+        imagePerfil?.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("Foto de Perfil")
+                .setMessage("Deseja mudar sua foto?")
+                .setPositiveButton("Escolher da Galeria") { _, _ ->
+                    galeria.launch("image/*")
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        // Crucial: remover o listener para evitar memory leak
         snapshotListener?.remove()
     }
 
-    // Destrava o campo ao clicar no ícone de lápis
+    // ─── UPLOAD DE FOTO ───────────────────────────────────────────────────────
+
+    private fun fazerUploadFoto(uri: Uri) {
+        val uid         = usuarioAtual?.uid ?: return
+        val imagePerfil = findViewById<ShapeableImageView>(R.id.imagePerfilUsuario)
+
+        try {
+            @Suppress("DEPRECATION")
+            val bitmap        = MediaStore.Images.Media.getBitmap(contentResolver, uri)
+            val redimensionado = Bitmap.createScaledBitmap(bitmap, 200, 200, true)
+            val baos           = ByteArrayOutputStream()
+            redimensionado.compress(Bitmap.CompressFormat.JPEG, 85, baos)
+            val bytes = baos.toByteArray()
+
+            val storageRef = FirebaseStorage.getInstance().reference
+                .child("fotos_perfil/$uid.jpg")
+
+            imagePerfil?.alpha = 0.5f
+
+            storageRef.putBytes(bytes)
+                .continueWithTask { task ->
+                    if (!task.isSuccessful) throw task.exception!!
+                    storageRef.downloadUrl
+                }
+                .addOnSuccessListener { downloadUri ->
+                    if (isFinishing || isDestroyed) return@addOnSuccessListener
+                    val fotoUrl = downloadUri.toString()
+                    db.collection("usuarios").document(uid)
+                        .update("fotoUrl", fotoUrl)
+                        .addOnSuccessListener {
+                            if (isFinishing || isDestroyed) return@addOnSuccessListener
+                            imagePerfil?.alpha = 1f
+                            imagePerfil?.load(fotoUrl) {
+                                placeholder(R.drawable.user_placeholder)
+                                error(R.drawable.user_placeholder)
+                            }
+                            Toast.makeText(this, "Foto atualizada com sucesso!", Toast.LENGTH_SHORT).show()
+                        }
+                        .addOnFailureListener {
+                            if (isFinishing || isDestroyed) return@addOnFailureListener
+                            imagePerfil?.alpha = 1f
+                            Toast.makeText(this, "Erro ao salvar URL da foto.", Toast.LENGTH_SHORT).show()
+                        }
+                }
+                .addOnFailureListener { e ->
+                    if (isFinishing || isDestroyed) return@addOnFailureListener
+                    imagePerfil?.alpha = 1f
+                    Toast.makeText(this, "Erro no upload: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+        } catch (e: Exception) {
+            Toast.makeText(this, "Erro ao processar imagem.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // ─── HELPERS ──────────────────────────────────────────────────────────────
+
     private fun configurarIconeEdicao(editText: EditText, icone: ImageView) {
         icone.setOnClickListener {
             editText.isEnabled = true
@@ -139,8 +221,8 @@ class TelaRF09Configuracao : AppCompatActivity() {
 
     private fun exibirPopupApagarConta() {
         val dialogView = layoutInflater.inflate(R.layout.popup_apagar_conta, null)
-        val builder = AlertDialog.Builder(this).setView(dialogView)
-        val dialog = builder.create()
+        val builder    = AlertDialog.Builder(this).setView(dialogView)
+        val dialog     = builder.create()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
         val btnConfirmar = dialogView.findViewById<MaterialButton>(R.id.buttonConfirmarApagarConta)

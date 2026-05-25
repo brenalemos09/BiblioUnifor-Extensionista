@@ -2,7 +2,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Rede -->
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Galeria de fotos: API 33+ (Android 13+) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- Galeria de fotos: API 28–32 (Android 9–12) -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
 
     <queries>
         <package android:name="com.spotify.music" />
@@ -20,7 +27,6 @@
         </intent>
     </queries>
 
-    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application

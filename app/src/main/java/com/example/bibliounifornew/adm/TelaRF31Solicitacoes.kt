@@ -9,6 +9,7 @@ import android.text.TextWatcher
 import android.view.Window
 import android.view.ViewGroup
 import android.widget.*
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -21,6 +22,11 @@ class TelaRF31Solicitacoes : AppCompatActivity() {
     private val db              = FirebaseFirestore.getInstance()
     private lateinit var adapter: SolicitacoesMidiaAdapter
     private val listaSolicit    = mutableListOf<ItemSolicitacaoMidia>()
+
+    // Launcher moderno — substitui startActivityForResult deprecado
+    private val fileLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { /* resultado não usado: a aprovação já foi salva no Firestore */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -162,7 +168,7 @@ class TelaRF31Solicitacoes : AppCompatActivity() {
                 type = mimeType
                 addCategory(Intent.CATEGORY_OPENABLE)
             }
-            startActivityForResult(Intent.createChooser(intent, "Selecione o arquivo"), 100)
+            fileLauncher.launch(Intent.createChooser(intent, "Selecione o arquivo"))
             db.collection("solicitacoes_midia").document(item.docId)
                 .set(mapOf("status" to "concluido", "status_$tipo" to "aprovado"), SetOptions.merge())
                 .addOnSuccessListener {

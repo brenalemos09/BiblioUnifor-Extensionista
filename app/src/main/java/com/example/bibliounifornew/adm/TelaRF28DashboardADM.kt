@@ -61,20 +61,16 @@ class TelaRF28DashboardADM : AppCompatActivity() {
         val txtAlugueis  = findViewById<TextView>(R.id.txtContadorAlugueis)
         val containerCad = findViewById<LinearLayout>(R.id.containerCadastrosPendentes)
 
-        // ── Contagem de alunos via AggregationQuery (eficiente) ──────────────
-        db.collection("usuarios")
-            .whereEqualTo("role", "aluno")
-            .count()
-            .get(AggregateSource.SERVER)
-            .addOnSuccessListener { snapshot ->
-                txtUsuarios?.text = snapshot.count.toString()
+        // ── Contagem de alunos — filtra ADMs pelo campo role ─────────────────
+        // Nota: novos usuários recebem tipoPerfil:"estudante" mas nunca um campo
+        // "role", logo whereEqualTo("role","aluno") retornaria 0. A solução é
+        // buscar todos os docs e excluir apenas os que têm role == "adm".
+        db.collection("usuarios").get()
+            .addOnSuccessListener { result ->
+                val count = result.documents.count { it.getString("role") != "adm" }
+                txtUsuarios?.text = count.toString()
             }
-            .addOnFailureListener {
-                // Fallback: conta documentos sem filtro de role
-                db.collection("usuarios").count().get(AggregateSource.SERVER)
-                    .addOnSuccessListener { s -> txtUsuarios?.text = s.count.toString() }
-                    .addOnFailureListener { txtUsuarios?.text = "—" }
-            }
+            .addOnFailureListener { txtUsuarios?.text = "—" }
 
         // ── Contagem de aluguéis ativos ───────────────────────────────────────
         db.collection("solicitacoes_emprestimo")
