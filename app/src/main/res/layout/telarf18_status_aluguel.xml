@@ -6,7 +6,6 @@
     android:layout_height="match_parent"
     android:background="@color/biblio_bg">
 
-    <!-- HEADER (Premium Standard) -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/headerStatusAluguel"
         android:layout_width="match_parent"
@@ -14,7 +13,6 @@
         android:background="@color/biblio_detalhes"
         app:layout_constraintTop_toTopOf="parent">
 
-        <!-- CÍRCULO DECORATIVO PREMIUM -->
         <View
             android:layout_width="260dp"
             android:layout_height="260dp"
@@ -26,14 +24,13 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- FOTO DO USUÁRIO -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardFotoStatusAluguel"
-            android:layout_width="110dp"
-            android:layout_height="110dp"
-            android:layout_marginTop="40dp"
-            app:cardCornerRadius="55dp"
-            app:cardElevation="8dp"
+            android:layout_width="82dp"
+            android:layout_height="82dp"
+            android:layout_marginTop="32dp"
+            app:cardCornerRadius="41dp"
+            app:cardElevation="0dp"
             app:strokeWidth="0dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -44,7 +41,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:scaleType="centerCrop"
-                android:src="@drawable/user_placeholder" />
+                android:src="@drawable/user_placeholder"
+                android:contentDescription="Foto de perfil" />
         </com.google.android.material.card.MaterialCardView>
 
         <TextView
@@ -62,11 +60,11 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- CONTEÚDO SCROLLÁVEL -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:fillViewport="true"
+        android:clipToPadding="false"
         app:layout_constraintBottom_toTopOf="@id/barraUsuario"
         app:layout_constraintTop_toBottomOf="@id/headerStatusAluguel">
 
@@ -74,11 +72,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="32dp"
-            android:paddingTop="24dp"
-            android:paddingBottom="100dp">
+            android:paddingHorizontal="24dp"
+            android:paddingTop="24dp">
 
-            <!-- TÍTULO -->
             <TextView
                 android:id="@+id/textTituloLivrosAlugados"
                 android:layout_width="wrap_content"
@@ -89,18 +85,17 @@
                 android:textSize="26sp"
                 android:textStyle="bold" />
 
-            <!-- LISTA DE ALUGUÉIS DINÂMICA -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclerStatusAluguel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:nestedScrollingEnabled="false"
-                android:clipToPadding="false" />
+                android:clipToPadding="false"
+                android:paddingBottom="100dp" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- BARRA DE TAREFAS FIXA -->
     <include
         android:id="@+id/barraUsuario"
         layout="@layout/barra_tarefas_usuario"

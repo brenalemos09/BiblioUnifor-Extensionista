@@ -4,9 +4,9 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
-import com.example.bibliounifornew.adm.TelaRF28DashboardADM
+import com.example.bibliounifornew.features.adm.dashboard.TelaRF28DashboardADM
+import com.example.bibliounifornew.features.usuario.biblioteca.TelaRF08DashboardUsuario
 import com.example.bibliounifornew.login.TelaRF02Intermediaria
-import com.example.bibliounifornew.usuario.TelaRF08DashboardUsuario
 
 class MainActivity : AppCompatActivity() {
 

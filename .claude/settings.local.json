@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(del \"D:\\\\UNIFOR\\\\CienciaComputacao\\\\2026.01_Semestre03\\\\T197-12_DesenvPlatMoveis\\\\BiblioUniforGrupo4\\\\BiblioUnifor_DEV_AB\\\\app\\\\src\\\\main\\\\java\\\\com\\\\example\\\\bibliounifornew\\\\Simulados.kt\")"
+      "Bash(del \"D:\\\\UNIFOR\\\\CienciaComputacao\\\\2026.01_Semestre03\\\\T197-12_DesenvPlatMoveis\\\\BiblioUniforGrupo4\\\\BiblioUnifor_DEV_AB\\\\app\\\\src\\\\main\\\\java\\\\com\\\\example\\\\bibliounifornew\\\\Simulados.kt\")",
+      "Bash(rm D:/UNIFOR/CienciaComputacao/2026.01_Semestre03/T197-12_DesenvPlatMoveis/BiblioUniforGrupo4/BiblioUnifor_DEV_AB/app/src/main/java/com/example/bibliounifornew/adm/*.kt)",
+      "Bash(echo \"ADM files deleted: $?\")",
+      "Bash(rm D:/UNIFOR/CienciaComputacao/2026.01_Semestre03/T197-12_DesenvPlatMoveis/BiblioUniforGrupo4/BiblioUnifor_DEV_AB/app/src/main/java/com/example/bibliounifornew/usuario/*.kt)",
+      "Bash(echo \"Usuario files deleted: $?\")",
+      "Bash(echo \"LivroAdapter.kt deleted: $?\")"
     ]
   }
 }

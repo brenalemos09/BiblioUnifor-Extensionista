@@ -6,7 +6,6 @@
     android:layout_height="match_parent"
     android:background="@color/biblio_bg">
 
-    <!-- Ícone -->
     <View
         android:layout_width="200dp"
         android:layout_height="200dp"
@@ -18,33 +17,33 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Título -->
-
-    <!-- Subtítulo -->
-
     <ImageView
         android:id="@+id/imageIcon2"
-        android:layout_width="300dp"
+        android:layout_width="0dp"
         android:layout_height="150dp"
-        android:layout_marginTop="80dp"
+        android:layout_marginHorizontal="40dp"
         android:adjustViewBounds="true"
+        android:scaleType="fitCenter"
         android:contentDescription="Ícone do aplicativo"
-        android:scrollbarSize="10sp"
+        app:layout_constraintWidth_max="300dp"
+        app:layout_constraintBottom_toTopOf="@+id/textTitulo"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.494"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed"
+        app:layout_constraintVertical_bias="0.4" />
 
     <TextView
         android:id="@+id/textTitulo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
         android:text="BiblioUnifor"
         android:textColor="#1B3434"
-        android:textSize="26sp"
+        android:textSize="28sp"
         android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/textSubtitulo"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/imageIcon2" />
 
@@ -52,25 +51,29 @@
         android:id="@+id/textSubtitulo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:text="Seja bem-vindo ao BiblioUnifor!"
-        android:textSize="16sp"
         android:textColor="#758989"
-        app:layout_constraintTop_toBottomOf="@id/textTitulo"
-        app:layout_constraintStart_toStartOf="parent"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toTopOf="@+id/buttonComecar"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="8dp"/>
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textTitulo" />
 
-    <!-- Botão -->
-    <Button
+
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/buttonComecar"
         android:layout_width="0dp"
-        android:layout_height="55dp"
-        android:layout_margin="32dp"
-        android:layout_marginBottom="56dp"
-        android:backgroundTint="@color/biblio_blue"
+        android:layout_height="56dp"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginBottom="48dp"
         android:text="Começar"
+        android:textAllCaps="false"
         android:textColor="#FFFFFF"
+        android:textSize="16sp"
         android:textStyle="bold"
+        app:backgroundTint="@color/biblio_blue"
+        app:cornerRadius="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />

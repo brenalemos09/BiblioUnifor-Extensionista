@@ -160,4 +160,43 @@ class UsuarioRepository {
             onComplete(false, e.message)
         }
     }
+
+    // ─── NOTIFICAÇÕES ─────────────────────────────────────────────────────────
+
+    /**
+     * Escuta a subcoleção de notificações do usuário em tempo real.
+     *
+     * Caminho Firestore: usuarios/{uid}/notificacoes
+     * Ordenação: por "data" decrescente (mais recente primeiro).
+     *
+     * @param uid      UID do usuário logado (de FirebaseAuth.currentUser.uid)
+     * @param onChange Chamado imediatamente com a lista atual e a cada nova
+     *                 notificação criada pelo ADM.
+     * @return [ListenerRegistration] — DEVE ser cancelado em onDestroy() da
+     *         Activity/Fragment: `snapshotListener?.remove()`
+     *
+     * Exemplo de uso:
+     *   snapshotListener = usuarioRepository.escutarNotificacoes(uid) { lista ->
+     *       adapter.atualizarLista(lista)
+     *   }
+     */
+    fun escutarNotificacoes(
+        uid     : String,
+        onChange: (List<Notificacao>) -> Unit
+    ): ListenerRegistration {
+        return db.collection("usuarios")
+            .document(uid)
+            .collection("notificacoes")
+            .orderBy("data", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null || snapshot == null) {
+                    onChange(emptyList())
+                    return@addSnapshotListener
+                }
+                val lista = snapshot.documents.mapNotNull { doc ->
+                    doc.data?.let { Notificacao.fromFirestore(doc.id, it) }
+                }
+                onChange(lista)
+            }
+    }
 }
