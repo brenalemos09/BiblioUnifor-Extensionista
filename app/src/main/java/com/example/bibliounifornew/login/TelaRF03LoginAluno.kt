@@ -9,7 +9,7 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.example.bibliounifornew.R
 import com.example.bibliounifornew.data.AuthRepository
-import com.example.bibliounifornew.usuario.TelaRF08DashboardUsuario
+import com.example.bibliounifornew.features.usuario.biblioteca.TelaRF08DashboardUsuario
 
 class TelaRF03LoginAluno : AppCompatActivity() {
 

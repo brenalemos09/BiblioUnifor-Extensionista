@@ -7,10 +7,6 @@
     android:layout_height="match_parent"
     android:background="@color/biblio_bg">
 
-    <!-- ===================================================== -->
-    <!-- HEADER PREMIUM MODERNO -->
-    <!-- ===================================================== -->
-
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/headerLivro"
         android:layout_width="match_parent"
@@ -18,7 +14,6 @@
         android:background="@color/biblio_detalhes"
         app:layout_constraintTop_toTopOf="parent">
 
-        <!-- CÍRCULO DECORATIVO DESIGNER -->
         <View
             android:layout_width="320dp"
             android:layout_height="320dp"
@@ -30,7 +25,6 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- CAPA DO LIVRO COM BORDAS SUAVES -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardCapaLivro"
             android:layout_width="115dp"
@@ -52,7 +46,6 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- TÍTULO IMPACTANTE -->
         <EditText
             android:id="@+id/editTituloLivro"
             android:layout_width="0dp"
@@ -60,12 +53,12 @@
             android:layout_marginStart="20dp"
             android:layout_marginTop="55dp"
             android:layout_marginEnd="8dp"
+            android:background="@android:color/transparent"
+            android:enabled="false"
+            android:fontFamily="sans-serif-black"
             android:text="O Alienista"
             android:textColor="@color/white"
             android:textSize="26sp"
-            android:fontFamily="sans-serif-black"
-            android:background="@android:color/transparent"
-            android:enabled="false"
             app:layout_constraintEnd_toStartOf="@id/btnEditTitulo"
             app:layout_constraintStart_toEndOf="@id/cardCapaLivro"
             app:layout_constraintTop_toTopOf="parent" />
@@ -76,25 +69,24 @@
             android:layout_height="24dp"
             android:layout_marginEnd="24dp"
             android:src="@drawable/ic_edit_pencil"
-            app:tint="@color/white"
             app:layout_constraintBottom_toBottomOf="@id/editTituloLivro"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/editTituloLivro" />
+            app:layout_constraintTop_toTopOf="@id/editTituloLivro"
+            app:tint="@color/white" />
 
-        <!-- AUTOR ELEGANTE -->
         <EditText
             android:id="@+id/editAutorLivro"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:layout_marginEnd="8dp"
+            android:alpha="0.8"
+            android:background="@android:color/transparent"
+            android:enabled="false"
+            android:fontFamily="sans-serif-medium"
             android:text="Machado de Assis"
             android:textColor="@color/white"
             android:textSize="18sp"
-            android:alpha="0.8"
-            android:fontFamily="sans-serif-medium"
-            android:background="@android:color/transparent"
-            android:enabled="false"
             app:layout_constraintEnd_toStartOf="@id/btnEditAutor"
             app:layout_constraintStart_toStartOf="@id/editTituloLivro"
             app:layout_constraintTop_toBottomOf="@id/editTituloLivro" />
@@ -104,14 +96,13 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:layout_marginEnd="24dp"
-            android:src="@drawable/ic_edit_pencil"
-            app:tint="@color/white"
             android:alpha="0.8"
+            android:src="@drawable/ic_edit_pencil"
             app:layout_constraintBottom_toBottomOf="@id/editAutorLivro"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/editAutorLivro" />
+            app:layout_constraintTop_toTopOf="@id/editAutorLivro"
+            app:tint="@color/white" />
 
-        <!-- BOTÃO APAGAR (PILL-SHAPE PERFEITO) -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnApagarMidia"
             android:layout_width="0dp"
@@ -125,18 +116,13 @@
             android:textColor="@color/white"
             android:textSize="16sp"
             app:backgroundTint="@color/biblio_red"
-            app:cornerRadius="28dp"
-            app:elevation="8dp"
+            app:cornerRadius="16dp"
+            app:elevation="0dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="@id/editTituloLivro"
-            app:layout_constraintTop_toBottomOf="@id/editAutorLivro"
-            app:rippleColor="#40FFFFFF" />
+            app:layout_constraintTop_toBottomOf="@id/editAutorLivro" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <!-- ===================================================== -->
-    <!-- CONTEÚDO FLUIDO -->
-    <!-- ===================================================== -->
 
     <ScrollView
         android:id="@+id/scrollView"
@@ -152,32 +138,36 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingBottom="48dp">
+            android:paddingBottom="64dp">
 
-            <!-- SEÇÃO SOBRE -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="28dp">
+                android:padding="24dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:fontFamily="sans-serif-black"
                         android:text="Sobre"
                         android:textColor="@color/black"
-                        android:textSize="26sp"
-                        android:fontFamily="sans-serif-black" />
+                        android:textSize="26sp" />
+
                     <ImageView
                         android:id="@+id/btnEditDescricao"
                         android:layout_width="24dp"
                         android:layout_height="24dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:src="@drawable/ic_edit_pencil"
                         app:tint="@color/black" />
                 </LinearLayout>
@@ -187,23 +177,21 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
+                    android:background="@android:color/transparent"
+                    android:enabled="false"
+                    android:fontFamily="sans-serif"
                     android:lineSpacingExtra="8dp"
                     android:text="Machado de Assis, neste livro, propõe a seguinte pergunta: quem é louco? Conheça a história do médico Simão Bacamarte, dedicado e estudioso da mente humana, que decide construir um hospício para tratar os doentes mentais na pequena cidade de Itaguaí a casa verde. Quem entra e quem fica de fora? Surpreenda-se com o final."
                     android:textColor="#555555"
-                    android:textSize="16sp"
-                    android:fontFamily="sans-serif"
-                    android:background="@android:color/transparent"
-                    android:enabled="false" />
+                    android:textSize="16sp" />
             </LinearLayout>
 
-            <!-- LISTA DE DETALHES REFINADA -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingHorizontal="28dp">
+                android:paddingHorizontal="24dp">
 
-                <!-- ITEM LÍNGUA -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -213,30 +201,29 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
                         android:text="Língua: "
                         android:textColor="@color/black"
-                        android:textSize="17sp"
-                        android:fontFamily="sans-serif-medium" />
+                        android:textSize="16sp" />
                     <EditText
                         android:id="@+id/editLingua"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:background="@android:color/transparent"
+                        android:enabled="false"
                         android:text="Português"
                         android:textColor="#777777"
-                        android:textSize="17sp"
-                        android:background="@android:color/transparent"
-                        android:enabled="false" />
+                        android:textSize="16sp" />
                     <ImageView
                         android:id="@+id/btnEditLingua"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/ic_edit_pencil"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:alpha="0.6"
+                        android:src="@drawable/ic_edit_pencil"
                         app:tint="@color/black" />
                 </LinearLayout>
 
-                <!-- ITEM EDITORA -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -246,30 +233,29 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
                         android:text="Editora: "
                         android:textColor="@color/black"
-                        android:textSize="17sp"
-                        android:fontFamily="sans-serif-medium" />
+                        android:textSize="16sp" />
                     <EditText
                         android:id="@+id/editEditora"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:background="@android:color/transparent"
+                        android:enabled="false"
                         android:text="Intrínseca"
                         android:textColor="#777777"
-                        android:textSize="17sp"
-                        android:background="@android:color/transparent"
-                        android:enabled="false" />
+                        android:textSize="16sp" />
                     <ImageView
                         android:id="@+id/btnEditEditora"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/ic_edit_pencil"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:alpha="0.6"
+                        android:src="@drawable/ic_edit_pencil"
                         app:tint="@color/black" />
                 </LinearLayout>
 
-                <!-- ITEM DIMENSÃO -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -279,30 +265,29 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
                         android:text="Dimensão: "
                         android:textColor="@color/black"
-                        android:textSize="17sp"
-                        android:fontFamily="sans-serif-medium" />
+                        android:textSize="16sp" />
                     <EditText
                         android:id="@+id/editDimensao"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:background="@android:color/transparent"
+                        android:enabled="false"
                         android:text="15.24 x 0.51 x 22.86 cm"
                         android:textColor="#777777"
-                        android:textSize="17sp"
-                        android:background="@android:color/transparent"
-                        android:enabled="false" />
+                        android:textSize="16sp" />
                     <ImageView
                         android:id="@+id/btnEditDimensao"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/ic_edit_pencil"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:alpha="0.6"
+                        android:src="@drawable/ic_edit_pencil"
                         app:tint="@color/black" />
                 </LinearLayout>
 
-                <!-- ITEM ISBN-10 -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -312,30 +297,29 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
                         android:text="ISBN-10: "
                         android:textColor="@color/black"
-                        android:textSize="17sp"
-                        android:fontFamily="sans-serif-medium" />
+                        android:textSize="16sp" />
                     <EditText
                         android:id="@+id/editISBN10"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:background="@android:color/transparent"
+                        android:enabled="false"
                         android:text="856356093X"
                         android:textColor="#777777"
-                        android:textSize="17sp"
-                        android:background="@android:color/transparent"
-                        android:enabled="false" />
+                        android:textSize="16sp" />
                     <ImageView
                         android:id="@+id/btnEditISBN10"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/ic_edit_pencil"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:alpha="0.6"
+                        android:src="@drawable/ic_edit_pencil"
                         app:tint="@color/black" />
                 </LinearLayout>
 
-                <!-- ITEM ISBN-13 -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -345,30 +329,29 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
                         android:text="ISBN-13: "
                         android:textColor="@color/black"
-                        android:textSize="17sp"
-                        android:fontFamily="sans-serif-medium" />
+                        android:textSize="16sp" />
                     <EditText
                         android:id="@+id/editISBN13"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:background="@android:color/transparent"
+                        android:enabled="false"
                         android:text="978-8563560933"
                         android:textColor="#777777"
-                        android:textSize="17sp"
-                        android:background="@android:color/transparent"
-                        android:enabled="false" />
+                        android:textSize="16sp" />
                     <ImageView
                         android:id="@+id/btnEditISBN13"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/ic_edit_pencil"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:alpha="0.6"
+                        android:src="@drawable/ic_edit_pencil"
                         app:tint="@color/black" />
                 </LinearLayout>
 
-                <!-- ITEM DATA -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -378,102 +361,100 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
                         android:text="Data: "
                         android:textColor="@color/black"
-                        android:textSize="17sp"
-                        android:fontFamily="sans-serif-medium" />
+                        android:textSize="16sp" />
                     <EditText
                         android:id="@+id/editData"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:background="@android:color/transparent"
+                        android:enabled="false"
                         android:text="18 dezembro 2019"
                         android:textColor="#777777"
-                        android:textSize="17sp"
-                        android:background="@android:color/transparent"
-                        android:enabled="false" />
+                        android:textSize="16sp" />
                     <ImageView
                         android:id="@+id/btnEditData"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/ic_edit_pencil"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:alpha="0.6"
+                        android:src="@drawable/ic_edit_pencil"
                         app:tint="@color/black" />
                 </LinearLayout>
 
-                <!-- ITEM PÁGINAS -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="20dp"
+                    android:layout_marginBottom="24dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
                         android:text="Páginas: "
                         android:textColor="@color/black"
-                        android:textSize="17sp"
-                        android:fontFamily="sans-serif-medium" />
+                        android:textSize="16sp" />
                     <EditText
                         android:id="@+id/editPaginas"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:background="@android:color/transparent"
+                        android:enabled="false"
                         android:text="80"
                         android:textColor="#777777"
-                        android:textSize="17sp"
-                        android:background="@android:color/transparent"
-                        android:enabled="false" />
+                        android:textSize="16sp" />
                     <ImageView
                         android:id="@+id/btnEditPaginas"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/ic_edit_pencil"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:alpha="0.6"
+                        android:src="@drawable/ic_edit_pencil"
                         app:tint="@color/black" />
                 </LinearLayout>
 
-                <!-- EXEMPLARES (ESTILO PILL MODERNO) -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-black"
                         android:text="Exemplares: "
                         android:textColor="@color/black"
-                        android:textSize="19sp"
-                        android:fontFamily="sans-serif-black" />
+                        android:textSize="18sp" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-black"
                         android:text="10/30"
                         android:textColor="@color/biblio_blue"
-                        android:textSize="19sp"
-                        android:fontFamily="sans-serif-black" />
+                        android:textSize="18sp" />
 
                     <Space
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1" />
 
-                    <!-- MENOS (CÍRCULO ELEVADO) -->
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/btnDiminuirExemplares"
                         android:layout_width="42dp"
                         android:layout_height="42dp"
+                        android:clickable="true"
+                        android:focusable="true"
                         app:cardBackgroundColor="@color/white"
                         app:cardCornerRadius="21dp"
-                        app:cardElevation="4dp"
-                        app:strokeWidth="1dp"
+                        app:cardElevation="2dp"
+                        app:rippleColor="#15000000"
                         app:strokeColor="#10000000"
-                        app:rippleColor="#15000000">
+                        app:strokeWidth="1dp">
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
@@ -489,22 +470,23 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="16dp"
                         android:layout_marginEnd="16dp"
+                        android:fontFamily="sans-serif-black"
                         android:text="30"
                         android:textColor="@color/black"
-                        android:textSize="22sp"
-                        android:fontFamily="sans-serif-black" />
+                        android:textSize="22sp" />
 
-                    <!-- MAIS (CÍRCULO ELEVADO) -->
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/btnAumentarExemplares"
                         android:layout_width="42dp"
                         android:layout_height="42dp"
+                        android:clickable="true"
+                        android:focusable="true"
                         app:cardBackgroundColor="@color/white"
                         app:cardCornerRadius="21dp"
-                        app:cardElevation="4dp"
-                        app:strokeWidth="1dp"
+                        app:cardElevation="2dp"
+                        app:rippleColor="#15000000"
                         app:strokeColor="#10000000"
-                        app:rippleColor="#15000000">
+                        app:strokeWidth="1dp">
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
@@ -518,22 +500,19 @@
 
             </LinearLayout>
 
-            <!-- DIVISÓRIA ELEGANTE -->
             <View
                 android:layout_width="match_parent"
                 android:layout_height="2dp"
-                android:layout_marginVertical="40dp"
-                android:layout_marginHorizontal="28dp"
+                android:layout_marginHorizontal="24dp"
+                android:layout_marginVertical="32dp"
                 android:background="#F2F2F2" />
 
-            <!-- SEÇÃO COMENTÁRIOS COM FEEDBACK VISUAL -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingHorizontal="28dp">
+                android:paddingHorizontal="24dp">
 
-                <!-- COMENTÁRIO 1 -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -541,12 +520,12 @@
                     android:orientation="horizontal">
 
                     <com.google.android.material.card.MaterialCardView
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        app:cardCornerRadius="28dp"
-                        app:cardElevation="4dp"
-                        app:strokeWidth="2dp"
-                        app:strokeColor="@color/white">
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        app:cardCornerRadius="24dp"
+                        app:cardElevation="0dp"
+                        app:strokeColor="#20000000"
+                        app:strokeWidth="1dp">
                         <ImageView
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
@@ -557,30 +536,29 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="18dp"
+                        android:layout_marginStart="16dp"
+                        android:fontFamily="sans-serif-black"
                         android:text="Ronaldo Alves"
                         android:textColor="@color/black"
-                        android:textSize="19sp"
-                        android:fontFamily="sans-serif-black" />
+                        android:textSize="18sp" />
                 </LinearLayout>
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="12dp"
+                    android:fontFamily="sans-serif"
                     android:lineSpacingExtra="5dp"
                     android:text="é um livro ótimo e engraçado e me parece fazer mais uma crítica à relação das pessoas com o poder e do conceito de loucura"
                     android:textColor="#666666"
-                    android:textSize="15sp"
-                    android:fontFamily="sans-serif" />
+                    android:textSize="15sp" />
 
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:layout_marginVertical="32dp"
+                    android:layout_marginVertical="24dp"
                     android:background="#F8F8F8" />
 
-                <!-- COMENTÁRIO 2 -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -588,12 +566,12 @@
                     android:orientation="horizontal">
 
                     <com.google.android.material.card.MaterialCardView
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        app:cardCornerRadius="28dp"
-                        app:cardElevation="4dp"
-                        app:strokeWidth="2dp"
-                        app:strokeColor="@color/white">
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        app:cardCornerRadius="24dp"
+                        app:cardElevation="0dp"
+                        app:strokeColor="#20000000"
+                        app:strokeWidth="1dp">
                         <ImageView
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
@@ -604,22 +582,22 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="18dp"
+                        android:layout_marginStart="16dp"
+                        android:fontFamily="sans-serif-black"
                         android:text="Ronaldo Alves"
                         android:textColor="@color/black"
-                        android:textSize="19sp"
-                        android:fontFamily="sans-serif-black" />
+                        android:textSize="18sp" />
                 </LinearLayout>
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="12dp"
+                    android:fontFamily="sans-serif"
                     android:lineSpacingExtra="5dp"
                     android:text="Lembro de ter sido obrigado a ler O Alienista no ensino médio, junto com outras obras igualmente entediantes como: O Guarani, Iracema e Quincas Borba. Sinceramente, não me recordo bem da trama."
                     android:textColor="#666666"
-                    android:textSize="15sp"
-                    android:fontFamily="sans-serif" />
+                    android:textSize="15sp" />
 
             </LinearLayout>
 

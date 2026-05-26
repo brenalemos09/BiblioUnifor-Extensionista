@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F7F7">
+    android:background="@color/biblio_bg">
 
-    <!-- HEADER -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/headerConfigAdm"
         android:layout_width="match_parent"
@@ -13,7 +13,6 @@
         android:background="@color/biblio_detalhes"
         app:layout_constraintTop_toTopOf="parent">
 
-        <!-- CÍRCULO -->
         <View
             android:layout_width="220dp"
             android:layout_height="220dp"
@@ -25,47 +24,48 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- FOTO -->
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardFotoAdm"
             android:layout_width="82dp"
             android:layout_height="82dp"
-            android:layout_marginTop="36dp"
-            android:layout_marginEnd="24dp"
+            android:layout_marginTop="32dp"
             app:cardCornerRadius="41dp"
-            app:cardElevation="4dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
 
             <ImageView
                 android:id="@+id/imageFotoAdm"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:scaleType="centerCrop"
-                android:src="@drawable/user_placeholder" />
+                android:src="@drawable/user_placeholder"
+                android:contentDescription="Foto de perfil" />
 
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
-        <!-- TÍTULO -->
         <TextView
             android:id="@+id/textTituloConfigAdm"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
             android:text="Configurações ADM"
             android:textColor="@color/white"
-            android:textSize="28sp"
+            android:textSize="26sp"
             android:textStyle="bold"
             app:layout_constraintTop_toBottomOf="@id/cardFotoAdm"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginTop="24dp" />
+            app:layout_constraintEnd_toEndOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- CONTEÚDO ROLÁVEL -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:fillViewport="true"
+        android:clipToPadding="false"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@id/headerConfigAdm">
 
@@ -73,100 +73,110 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:paddingHorizontal="24dp"
+            android:paddingTop="32dp"
+            android:paddingBottom="48dp">
 
-            <!-- CAMPO NOME -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
                 android:text="Nome"
-                android:textColor="#000000"
-                android:textSize="18sp"
+                android:textColor="@color/biblio_dark"
+                android:textSize="16sp"
                 android:textStyle="bold" />
+
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="16dp">
+                android:layout_marginBottom="24dp">
+
                 <EditText
                     android:id="@+id/editNomeAdm"
                     android:layout_width="match_parent"
-                    android:layout_height="55dp"
-                    android:background="@drawable/bg_input_pill"
-                    android:paddingHorizontal="16dp"
+                    android:layout_height="56dp"
+                    android:background="@drawable/bg_input"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="48dp"
                     android:hint="Seu nome"
-                    android:textColor="#444444"
-                    android:textColorHint="#AAAAAA"
+                    android:textColor="@color/black"
+                    android:textColorHint="#9E9E9E"
+                    android:textSize="16sp"
                     android:inputType="textPersonName" />
+
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
                     android:layout_marginEnd="16dp"
-                    android:padding="4dp"
                     android:src="@drawable/ic_edit_pencil"
-                    app:tint="#1B3434" />
+                    app:tint="@color/biblio_dark" />
             </RelativeLayout>
 
-            <!-- CAMPO USUÁRIO -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
                 android:text="Usuário"
-                android:textColor="#000000"
-                android:textSize="18sp"
+                android:textColor="@color/biblio_dark"
+                android:textSize="16sp"
                 android:textStyle="bold" />
+
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="16dp">
+                android:layout_marginBottom="24dp">
+
                 <EditText
                     android:id="@+id/editUsuarioAdm"
                     android:layout_width="match_parent"
-                    android:layout_height="55dp"
-                    android:background="@drawable/bg_input_pill"
-                    android:paddingHorizontal="16dp"
+                    android:layout_height="56dp"
+                    android:background="@drawable/bg_input"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="48dp"
                     android:hint="Nome de usuário"
-                    android:textColor="#444444"
-                    android:textColorHint="#AAAAAA"
+                    android:textColor="@color/black"
+                    android:textColorHint="#9E9E9E"
+                    android:textSize="16sp"
                     android:inputType="text" />
+
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
                     android:layout_marginEnd="16dp"
-                    android:padding="4dp"
                     android:src="@drawable/ic_edit_pencil"
-                    app:tint="#1B3434" />
+                    app:tint="@color/biblio_dark" />
             </RelativeLayout>
 
-            <!-- CAMPO SENHA ATUAL -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
                 android:text="Senha atual"
-                android:textColor="#000000"
-                android:textSize="18sp"
+                android:textColor="@color/biblio_dark"
+                android:textSize="16sp"
                 android:textStyle="bold" />
+
             <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="55dp"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="24dp">
+                android:layout_height="56dp"
+                android:layout_marginBottom="40dp">
 
                 <EditText
                     android:id="@+id/editSenhaAtual"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:background="@drawable/bg_input_pill"
+                    android:background="@drawable/bg_input"
                     android:inputType="textPassword"
-                    android:paddingHorizontal="16dp"
-                    android:paddingEnd="50dp"
+                    android:importantForAutofill="no"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="56dp"
                     android:text="**********"
-                    android:textColor="#444444" />
+                    android:textColor="@color/black"
+                    android:textSize="16sp" />
 
                 <ImageView
                     android:id="@+id/iconOlhoSenhaAtual"
@@ -174,54 +184,58 @@
                     android:layout_height="48dp"
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
-                    android:layout_marginEnd="8dp"
+                    android:layout_marginEnd="4dp"
                     android:padding="12dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@drawable/ic_eye_closed"
                     app:tint="@color/biblio_blue"
                     android:contentDescription="@string/desc_mostrar_ocultar_senha"/>
             </RelativeLayout>
 
-            <!-- BOTÃO SALVAR ALTERAÇÕES -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSalvarAlteracoes"
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:layout_marginBottom="12dp"
+                android:layout_height="56dp"
+                android:layout_marginBottom="16dp"
                 android:text="Salvar Alterações"
                 android:textAllCaps="false"
-                android:textSize="17sp"
+                android:textSize="16sp"
                 android:textStyle="bold"
+                android:textColor="@color/white"
                 app:backgroundTint="@color/biblio_detalhes"
-                app:cornerRadius="12dp" />
+                app:cornerRadius="16dp"
+                app:elevation="0dp" />
 
-            <!-- BOTÕES -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnRedefinirSenha"
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:layout_marginBottom="12dp"
+                android:layout_height="56dp"
+                android:layout_marginBottom="16dp"
                 android:text="Redefinir Senha"
                 android:textAllCaps="false"
-                android:textSize="17sp"
+                android:textSize="16sp"
                 android:textStyle="bold"
+                android:textColor="@color/white"
                 app:backgroundTint="@color/biblio_blue"
-                app:cornerRadius="12dp" />
+                app:cornerRadius="16dp"
+                app:elevation="0dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnApagarConta"
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:layout_marginBottom="20dp"
+                android:layout_height="56dp"
                 android:text="Apagar conta"
                 android:textAllCaps="false"
-                android:textSize="17sp"
+                android:textSize="16sp"
                 android:textStyle="bold"
+                android:textColor="@color/white"
                 app:backgroundTint="@color/biblio_red"
-                app:cornerRadius="12dp" />
+                app:cornerRadius="16dp"
+                app:elevation="0dp" />
 
         </LinearLayout>
     </ScrollView>
-
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>

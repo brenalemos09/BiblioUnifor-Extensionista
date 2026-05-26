@@ -6,7 +6,6 @@
     android:layout_height="match_parent"
     android:background="@color/biblio_bg">
 
-    <!-- HEADER PREMIUM (240dp height) -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/headerDashboardAdm"
         android:layout_width="match_parent"
@@ -14,7 +13,6 @@
         android:background="@color/biblio_detalhes"
         app:layout_constraintTop_toTopOf="parent">
 
-        <!-- CÍRCULO DECORATIVO -->
         <View
             android:layout_width="220dp"
             android:layout_height="220dp"
@@ -26,27 +24,29 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- CONFIG ICON -->
         <ImageView
             android:id="@+id/iconConfigAdm"
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:layout_marginStart="24dp"
-            android:layout_marginTop="50dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:padding="4dp"
             android:src="@android:drawable/ic_menu_manage"
+            app:layout_constraintBottom_toBottomOf="@+id/cardFotoAdm"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/cardFotoAdm"
             app:tint="@color/white" />
 
-        <!-- FOTO PERFIL (Material Circle) -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardFotoAdm"
             android:layout_width="82dp"
             android:layout_height="82dp"
-            android:layout_marginTop="40dp"
+            android:layout_marginTop="32dp"
             android:layout_marginEnd="24dp"
             app:cardCornerRadius="41dp"
-            app:cardElevation="6dp"
+            app:cardElevation="0dp"
             app:strokeWidth="0dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent">
@@ -59,44 +59,42 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- TEXTOS HEADER -->
         <TextView
             android:id="@+id/textBemVindoAdm"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="16dp"
+            android:alpha="0.9"
             android:text="Bem-vindo,"
             android:textColor="@color/white"
             android:textSize="18sp"
-            android:alpha="0.9"
-            app:layout_constraintTop_toBottomOf="@id/cardFotoAdm"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintTop_toBottomOf="@id/cardFotoAdm" />
 
         <TextView
             android:id="@+id/textDashboardAdm"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="4dp"
+            android:letterSpacing="0.02"
             android:text="DASHBOARD ADM"
             android:textColor="@color/white"
-            android:textSize="28sp"
+            android:textSize="26sp"
             android:textStyle="bold"
-            android:letterSpacing="0.02"
-            app:layout_constraintTop_toBottomOf="@id/textBemVindoAdm"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintTop_toBottomOf="@id/textBemVindoAdm" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- CONTEÚDO SCROLLABLE -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:fillViewport="true"
         android:clipToPadding="false"
-        app:layout_constraintTop_toBottomOf="@id/headerDashboardAdm"
-        app:layout_constraintBottom_toTopOf="@id/include_nav_adm">
+        android:fillViewport="true"
+        app:layout_constraintBottom_toTopOf="@id/include_nav_adm"
+        app:layout_constraintTop_toBottomOf="@id/headerDashboardAdm">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -104,23 +102,23 @@
             android:orientation="vertical"
             android:paddingHorizontal="24dp"
             android:paddingTop="24dp"
-            android:paddingBottom="32dp">
+            android:paddingBottom="48dp">
 
-            <!-- CARD 1: ESTATÍSTICAS RÁPIDAS -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="4dp"
-                app:strokeWidth="0dp"
-                app:cardBackgroundColor="@color/white">
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeColor="#E0E0E0"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="20dp">
+                    android:padding="24dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -137,7 +135,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Usuários"
-                                android:textColor="#415E5E"
+                                android:textColor="#758989"
                                 android:textSize="14sp"
                                 android:textStyle="bold" />
 
@@ -148,7 +146,7 @@
                                 android:layout_marginTop="4dp"
                                 android:text="—"
                                 android:textColor="@color/biblio_blue"
-                                android:textSize="24sp"
+                                android:textSize="26sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
 
@@ -162,7 +160,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Aluguéis"
-                                android:textColor="#415E5E"
+                                android:textColor="#758989"
                                 android:textSize="14sp"
                                 android:textStyle="bold" />
 
@@ -173,7 +171,7 @@
                                 android:layout_marginTop="4dp"
                                 android:text="—"
                                 android:textColor="@color/biblio_blue"
-                                android:textSize="24sp"
+                                android:textSize="26sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
                     </LinearLayout>
@@ -181,40 +179,40 @@
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/buttonCrudAdm"
                         android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="20dp"
+                        android:layout_height="56dp"
+                        android:layout_marginTop="24dp"
                         android:text="Gerenciar Dados (CRUD)"
                         android:textAllCaps="false"
                         android:textColor="@color/white"
-                        android:textSize="14sp"
+                        android:textSize="15sp"
                         android:textStyle="bold"
                         app:backgroundTint="@color/biblio_blue"
-                        app:cornerRadius="24dp"
-                        app:elevation="2dp" />
+                        app:cornerRadius="16dp"
+                        app:elevation="0dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- CARD 2: ANÁLISE -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="4dp"
-                app:strokeWidth="0dp"
-                app:cardBackgroundColor="@color/white">
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeColor="#E0E0E0"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="20dp">
+                    android:padding="24dp">
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Análise de Aluguéis"
-                        android:textColor="@color/biblio_blue"
+                        android:textColor="@color/biblio_dark"
                         android:textSize="18sp"
                         android:textStyle="bold" />
 
@@ -224,42 +222,39 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
                         android:orientation="vertical">
-
-                        <!-- populado em runtime por carregarEstatisticas() -->
-
                     </LinearLayout>
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/buttonVerAlugueis"
                         android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="20dp"
-                        android:text="Ver alugueis"
+                        android:layout_height="56dp"
+                        android:layout_marginTop="24dp"
+                        android:text="Ver aluguéis"
                         android:textAllCaps="false"
                         android:textColor="@color/white"
-                        android:textSize="14sp"
+                        android:textSize="15sp"
                         android:textStyle="bold"
                         app:backgroundTint="@color/biblio_blue"
-                        app:cornerRadius="24dp"
-                        app:elevation="2dp" />
+                        app:cornerRadius="16dp"
+                        app:elevation="0dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- CARD 3: ATRASOS -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="4dp"
-                app:strokeWidth="0dp"
-                app:cardBackgroundColor="@color/white">
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeColor="#FFCDD2"
+                app:strokeWidth="1.5dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="20dp">
+                    android:padding="24dp">
 
                     <TextView
                         android:layout_width="match_parent"
@@ -275,48 +270,45 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
                         android:orientation="vertical">
-
-                        <!-- populado em runtime por carregarAtrasosCriticos() -->
-
                     </LinearLayout>
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/buttonVerAtrasos"
                         android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="20dp"
+                        android:layout_height="56dp"
+                        android:layout_marginTop="24dp"
                         android:text="Gerenciar Atrasos"
                         android:textAllCaps="false"
                         android:textColor="@color/white"
-                        android:textSize="14sp"
+                        android:textSize="15sp"
                         android:textStyle="bold"
-                        app:backgroundTint="@color/biblio_blue"
-                        app:cornerRadius="24dp"
-                        app:elevation="2dp" />
+                        app:backgroundTint="@color/biblio_red"
+                        app:cornerRadius="16dp"
+                        app:elevation="0dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- CARD 4: CADASTROS -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="4dp"
-                app:strokeWidth="0dp"
-                app:cardBackgroundColor="@color/white">
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeColor="#E0E0E0"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="20dp">
+                    android:padding="24dp">
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Aguardando Confirmação"
-                        android:textColor="@color/biblio_blue"
+                        android:textColor="@color/biblio_dark"
                         android:textSize="18sp"
                         android:textStyle="bold" />
 
@@ -326,47 +318,44 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
                         android:orientation="vertical">
-
-                        <!-- populado em runtime por carregarEstatisticas() -->
-
                     </LinearLayout>
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/buttonVerCadastros"
                         android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="20dp"
+                        android:layout_height="56dp"
+                        android:layout_marginTop="24dp"
                         android:text="Validar Cadastros"
                         android:textAllCaps="false"
                         android:textColor="@color/white"
-                        android:textSize="14sp"
+                        android:textSize="15sp"
                         android:textStyle="bold"
                         app:backgroundTint="@color/biblio_blue"
-                        app:cornerRadius="24dp"
-                        app:elevation="2dp" />
+                        app:cornerRadius="16dp"
+                        app:elevation="0dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- CARD 5: SOLICITAÇÕES -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="4dp"
-                app:strokeWidth="0dp"
-                app:cardBackgroundColor="@color/white">
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeColor="#E0E0E0"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="20dp">
+                    android:padding="24dp">
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Solicitações Pendentes"
-                        android:textColor="@color/biblio_blue"
+                        android:textColor="@color/biblio_dark"
                         android:textSize="18sp"
                         android:textStyle="bold" />
 
@@ -380,13 +369,13 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="horizontal"
-                            android:paddingVertical="4dp">
+                            android:paddingVertical="6dp">
                             <TextView
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
                                 android:text="O Jardim das Ilusões"
-                                android:textColor="#415E5E"
+                                android:textColor="#758989"
                                 android:textSize="15sp"
                                 android:textStyle="bold" />
                             <TextView
@@ -402,13 +391,13 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="horizontal"
-                            android:paddingVertical="4dp">
+                            android:paddingVertical="6dp">
                             <TextView
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
                                 android:text="Vozes do Deserto"
-                                android:textColor="#415E5E"
+                                android:textColor="#758989"
                                 android:textSize="15sp"
                                 android:textStyle="bold" />
                             <TextView
@@ -424,13 +413,13 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="horizontal"
-                            android:paddingVertical="4dp">
+                            android:paddingVertical="6dp">
                             <TextView
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
                                 android:text="Um Homem Chamado Ove"
-                                android:textColor="#415E5E"
+                                android:textColor="#758989"
                                 android:textSize="15sp"
                                 android:textStyle="bold" />
                             <TextView
@@ -446,21 +435,20 @@
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/buttonVerSolicitacoes"
                         android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="20dp"
+                        android:layout_height="56dp"
+                        android:layout_marginTop="24dp"
                         android:text="Ver Solicitações"
                         android:textAllCaps="false"
                         android:textColor="@color/white"
-                        android:textSize="14sp"
+                        android:textSize="15sp"
                         android:textStyle="bold"
                         app:backgroundTint="@color/biblio_blue"
-                        app:cornerRadius="24dp"
-                        app:elevation="2dp" />
+                        app:cornerRadius="16dp"
+                        app:elevation="0dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
-
     </ScrollView>
 
     <include
