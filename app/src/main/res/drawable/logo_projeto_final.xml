@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Fundo Branco -->
+    <item android:drawable="@android:color/white" />
+
+    <!-- Logo da Unifor centralizado com margem de segurança para não ser cortado -->
+    <item
+        android:top="25dp"
+        android:bottom="25dp"
+        android:left="25dp"
+        android:right="25dp">
+        <bitmap
+            android:src="@drawable/unifor_marca"
+            android:gravity="center" />
+    </item>
+</layer-list>
