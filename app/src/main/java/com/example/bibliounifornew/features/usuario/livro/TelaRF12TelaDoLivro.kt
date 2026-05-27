@@ -1,8 +1,10 @@
 package com.example.bibliounifornew.features.usuario.livro
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.ImageView
@@ -104,6 +106,27 @@ class TelaRF12TelaDoLivro : AppCompatActivity() {
                     txtEstoque?.text = "Sem estoque"
                     indicador?.backgroundTintList =
                         ColorStateList.valueOf(Color.parseColor("#C62828"))
+                }
+
+                // ── PDF / Audiobook ──────────────────────────────────────────────────
+                val linkPdf   = doc.getString("linkPdf")
+                val linkAudio = doc.getString("linkAudiobook")
+
+                val btnPdf   = findViewById<MaterialButton>(R.id.buttonPdf)
+                val btnAudio = findViewById<MaterialButton>(R.id.buttonAudiobook)
+
+                if (!linkPdf.isNullOrBlank()) {
+                    btnPdf?.visibility = View.VISIBLE
+                    btnPdf?.setOnClickListener { abrirUrlExterna(linkPdf) }
+                } else {
+                    btnPdf?.visibility = View.GONE
+                }
+
+                if (!linkAudio.isNullOrBlank()) {
+                    btnAudio?.visibility = View.VISIBLE
+                    btnAudio?.setOnClickListener { abrirUrlExterna(linkAudio) }
+                } else {
+                    btnAudio?.visibility = View.GONE
                 }
             }
             .addOnFailureListener {
@@ -217,6 +240,16 @@ class TelaRF12TelaDoLivro : AppCompatActivity() {
         findViewById<MaterialButton>(R.id.buttonLer)?.setOnClickListener {
             startActivity(Intent(this, TelaRF14LeituraActivity::class.java)
                 .putExtra("LIVRO_ID", livroIdAtual))
+        }
+    }
+
+    // ─── ABRIDOR DE URL EXTERNO ───────────────────────────────────────────────
+
+    private fun abrirUrlExterna(url: String) {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(this, getString(R.string.erro_abrir_link), Toast.LENGTH_SHORT).show()
         }
     }
 

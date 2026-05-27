@@ -211,6 +211,39 @@
                 app:cornerRadius="30dp"
                 app:elevation="2dp"/>
 
+            <!-- ACESSO DIGITAL: PDF E AUDIOBOOK -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonPdf"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="8dp"
+                android:text="@string/btn_ler_pdf"
+                android:textAllCaps="false"
+                android:textSize="14sp"
+                android:textColor="@color/biblio_blue"
+                android:visibility="gone"
+                android:contentDescription="@string/desc_btn_pdf"
+                app:strokeColor="@color/biblio_blue"
+                app:cornerRadius="16dp"
+                app:elevation="0dp"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonAudiobook"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="8dp"
+                android:text="@string/btn_ouvir_audiobook"
+                android:textAllCaps="false"
+                android:textSize="14sp"
+                android:textColor="@color/biblio_blue"
+                android:visibility="gone"
+                android:contentDescription="@string/desc_btn_audiobook"
+                app:strokeColor="@color/biblio_blue"
+                app:cornerRadius="16dp"
+                app:elevation="0dp"/>
+
             <!-- NOTA -->
             <TextView
                 android:id="@+id/labelSuaNota"

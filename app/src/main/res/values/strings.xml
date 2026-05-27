@@ -72,6 +72,11 @@
     <string name="btn_alugar">Alugar</string>
     <string name="btn_solicitar">Solicitar</string>
     <string name="btn_ler_agora">LER AGORA</string>
+    <string name="btn_ler_pdf">Ler em PDF</string>
+    <string name="btn_ouvir_audiobook">Ouvir Audiobook</string>
+    <string name="desc_btn_pdf">Abrir PDF do livro no visualizador padrão</string>
+    <string name="desc_btn_audiobook">Ouvir audiobook no player padrão</string>
+    <string name="erro_abrir_link">Não foi possível abrir o link. Verifique se há um aplicativo compatível instalado.</string>
     <string name="label_status_leitura">Status da Leitura</string>
     <string name="label_btn_nao_lido">Não lido</string>
     <string name="label_btn_lendo">Lendo</string>

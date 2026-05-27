@@ -25,6 +25,8 @@ data class EntidadeLivro(
     val hasPdf: Boolean = false,
     val hasBraille: Boolean = false,
     val hasAudiobook: Boolean = false,
+    val linkPdf: String = "",
+    val linkAudiobook: String = "",
     val librarySector: String = "", // Ex: 75H.102B
     val isAvailable: Boolean = true,
     val isFavorite: Boolean = false
