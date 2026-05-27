@@ -433,9 +433,16 @@
     <string name="fmt_cadastro_confirmado">Cadastro de %s confirmado!</string>
     <string name="erro_confirmar_cadastro">Não foi possível confirmar o cadastro. Tente novamente.</string>
     <string name="popup_confirmacao_texto">Esse usuário ainda não confirmou o e-mail. Confirmar mesmo assim?</string>
+    <!-- GAP-3: variante com nome do usuário interpolado no popup -->
+    <string name="popup_confirmacao_texto_usuario">Deseja aprovar o cadastro de %s?</string>
     <string name="popup_confirmacao_btn_confirmar">Confirmar Cadastro</string>
     <string name="popup_confirmacao_btn_voltar">Voltar</string>
     <string name="desc_foto_usuario_confirmacao">Foto do usuário</string>
+    <!-- GAP-3: notificação enviada ao aluno após aprovação -->
+    <string name="notif_cadastro_aprovado_titulo">Cadastro aprovado! 🎉</string>
+    <string name="notif_cadastro_aprovado_msg">Seu cadastro na BiblioUnifor foi aprovado pelo administrador. Você já pode acessar todos os recursos da biblioteca.</string>
+    <!-- Reutilizado pelo botão de salvamento em andamento -->
+    <string name="msg_salvando">Salvando…</string>
 
     <!-- ═══════════════════════════════════════════════════════════════
          RF34 — Lista de Aluguéis ADM (Anderson V04)
@@ -447,7 +454,11 @@
     <string name="desc_avatar_usuario_aluguel">Avatar do usuário</string>
     <string name="desc_capa_livro_aluguel">Capa do livro</string>
     <string name="msg_nenhum_aluguel_colecao">Nenhum aluguel encontrado.</string>
+    <string name="msg_nenhum_aluguel_ativo">Nenhum aluguel ativo no momento.</string>
+    <string name="msg_historico_vazio">Seu histórico de leituras está vazio.</string>
+    <string name="msg_desejos_vazios">Sua lista de desejos está vazia.</string>
     <string name="erro_carregar_alugueis">Erro ao carregar aluguéis.</string>
+    <string name="placeholder_usuario">Usuário</string>
 
     <!-- ═══════════════════════════════════════════════════════════════
          RF36 — Configurações ADM (Anderson V04)

@@ -39,6 +39,8 @@ class TelaRF12TelaDoLivro : AppCompatActivity() {
     private var livroIdAtual    : String               = ""
     private var tituloAtual     : String               = ""
     private var autorAtual      : String               = ""
+    private var coverUrlAtual   : String               = ""
+    private var disponivelAtual : Boolean              = true
     private var livroListener   : ListenerRegistration? = null
     private lateinit var livroDao: LivroDao
 
@@ -147,8 +149,10 @@ class TelaRF12TelaDoLivro : AppCompatActivity() {
     // Fonte única de renderização — usada tanto pelo Firestore quanto pelo Room.
 
     private fun renderizarDadosDaEntidade(livro: EntidadeLivro) {
-        tituloAtual = livro.title
-        autorAtual  = livro.author
+        tituloAtual     = livro.title
+        autorAtual      = livro.author
+        coverUrlAtual   = livro.coverUrl
+        disponivelAtual = livro.isAvailable
 
         findViewById<TextView>(R.id.textTituloLivro)?.text = livro.title
         findViewById<TextView>(R.id.textAutorLivro)?.text  = livro.author
@@ -340,6 +344,8 @@ class TelaRF12TelaDoLivro : AppCompatActivity() {
             "livroId"      to livroIdAtual,
             "titulo"       to tituloParaSalvar,
             "autor"        to autorParaSalvar,
+            "coverUrl"     to coverUrlAtual,
+            "disponivel"   to disponivelAtual,
             "adicionadoEm" to System.currentTimeMillis()
         )
 
