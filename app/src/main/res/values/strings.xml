@@ -108,7 +108,7 @@
     <string name="label_pesquisa">Pesquisar</string>
     <string name="label_nome">Nome</string>
     <string name="hint_nome">Digite seu nome</string>
-    <string name="desc_editar_campo">Editar campo</string>
+
     <string name="label_usuario">Usuário</string>
     <string name="hint_usuario">Digite seu usuário</string>
     <string name="usuario_exemplo">@joaobobo</string>
@@ -123,11 +123,11 @@
 
     <!-- Redefinir Senha (RF11) -->
     <string name="fechar_x">X</string>
-    <string name="hint_nova_senha">Nova Senha</string>
+
     <string name="erro_senha_invalida">Senha inválida (mínimo 8 caracteres, maiúscula e número)</string>
     <string name="hint_confirmar_senha">Confirme a Senha</string>
     <string name="erro_senhas_nao_coincidem">As senhas não coincidem</string>
-    <string name="btn_salvar_alteracoes">Salvar Alterações</string>
+
 
     <!-- Navigation Short Labels/Descriptions -->
     <string name="label_meus_livros">Meus Livros</string>
@@ -177,8 +177,7 @@
     <string name="amigo_ronaldo">Ronaldo Alves</string>
     <string name="amigo_robson">Robson Gonçalves</string>
     <string name="amigo_vitoria">Vitoria Ferreira</string>
-    <string name="amigo_marta">Marta Viana</string>
-    <string name="amigo_adriano">Adriano de Souza</string>
+
     <string name="menu_opcoes_simbolo">•••</string>
 
     <!-- RF19 Status Aluguel -->
@@ -224,6 +223,11 @@
     <!-- Popups -->
     <string name="titulo_filtrar_midia">Filtrar Mídia</string>
     <string name="titulo_filtrar_solicitacoes">Filtrar Solicitações</string>
+    <string name="popup_apagar_midia_titulo">Apagar Mídia</string>
+    <string name="popup_apagar_midia_descricao">Tem certeza que deseja excluir esta mídia permanentemente do acervo?</string>
+    <string name="popup_apagar_midia_erro_senha">Senha incorreta</string>
+    <string name="popup_apagar_midia_hint_senha">Senha do administrador</string>
+    <string name="btn_cancelar">Cancelar</string>
     <string name="label_tipo_solicitacao">TIPO DE SOLICITAÇÃO</string>
     <string name="label_pesquisar_usuario">PESQUISAR POR USUÁRIO</string>
     <string name="hint_nome_usuario">Nome do usuário...</string>
@@ -232,6 +236,13 @@
     <string name="hint_isbn">ISBN...</string>
     <string name="btn_salvar_filtro">Salvar Filtro</string>
     <string name="btn_limpar_filtragem">Limpar Filtragem</string>
+
+    <!-- Popup Pendentes Retirada -->
+    <string name="popup_pendentes_titulo">Pendentes para Retirada</string>
+    <string name="popup_pendentes_btn_notif_atraso">Notificar Atraso</string>
+    <string name="popup_pendentes_btn_notif_valor">Notificar Valor</string>
+    <string name="popup_pendentes_btn_confirmar">Confirmar</string>
+    <string name="popup_pendentes_btn_remover">Remover</string>
 
     <string name="titulo_escolha_data">Escolha a data de publicação</string>
     <string name="label_selecionar_data">Selecionar data</string>
@@ -376,46 +387,7 @@
     <string name="erro_adicione_arquivos">Adicione todos os arquivos necessários</string>
     <string name="erro_falha_cadastrar_livro">Falha ao cadastrar livro.</string>
 
-    <!-- RF35 — Editar / Apagar mídia -->
-    <string name="popup_apagar_midia_titulo">Apagar mídia?</string>
-    <string name="popup_apagar_midia_descricao">Essa ação não poderá ser desfeita.\nDigite sua senha atual:</string>
-    <string name="popup_apagar_midia_hint_senha">Sua senha</string>
-    <string name="popup_apagar_midia_erro_senha">Digite sua senha atual!</string>
-    <string name="msg_midia_removida">Mídia removida com sucesso.</string>
-    <string name="msg_campo_atualizado">Campo atualizado!</string>
-    <string name="msg_editando">Editando…</string>
-    <string name="erro_id_livro_nao_fornecido">Erro: ID do livro não fornecido.</string>
-    <string name="btn_cancelar">Cancelar</string>
 
-    <!-- ═══════════════════════════════════════════════════════════════
-         RF32 — Financeiro / Controle de Atrasos (Anderson V04)
-         ═══════════════════════════════════════════════════════════════ -->
-    <string name="titulo_livros_vencidos">Livros Vencidos</string>
-    <string name="label_bem_vindo">Bem-vindo</string>
-    <string name="btn_ver_pendentes">Ver pendentes / retirada</string>
-    <string name="msg_nenhum_vencido">Nenhum livro vencido.</string>
-    <string name="btn_renovar_aluguel">Renovar</string>
-    <string name="btn_renovar_aluguel_selecionado">Renovar Aluguel Selecionado</string>
-    <string name="msg_lista_vencidos_vazia">Não há livros vencidos no momento.</string>
-    <string name="msg_aviso_atraso_enviado">Aviso de atraso enviado.</string>
-    <string name="msg_multa_notificada">Notificação de multa enviada.</string>
-    <string name="msg_aluguel_confirmado">Aluguel confirmado com sucesso.</string>
-    <string name="msg_registro_removido">Registro removido.</string>
-    <string name="msg_aluguel_renovado">Aluguel renovado por 14 dias.</string>
-    <string name="erro_renovar_aluguel">Falha ao renovar aluguel. Tente novamente.</string>
-    <string name="erro_carregar_vencidos">Erro ao carregar livros vencidos.</string>
-    <string name="popup_pendentes_titulo">Detalhes da Pendência</string>
-    <string name="popup_pendentes_btn_notif_atraso">Notificar atraso</string>
-    <string name="popup_pendentes_btn_notif_valor">Notificar valor</string>
-    <string name="popup_pendentes_btn_confirmar">Confirmar aluguel</string>
-    <string name="popup_pendentes_btn_remover">Remover registro\n(Ação irreversível)</string>
-    <string name="fmt_info_pendencia">Livro: %1$s\nUsuário: %2$s\nPrazo: %3$s\nAtraso: %4$d dia(s)\nMulta est.: R$ %5$s</string>
-    <string name="notif_atraso_mensagem">Seu aluguel está atrasado. Regularize para evitar bloqueios.</string>
-    <string name="notif_multa_mensagem">Existe valor pendente referente ao seu aluguel.</string>
-    <string name="fmt_item_atraso">Atraso: %d dia(s)</string>
-    <string name="fmt_item_multa">Multa est.: R$ %s</string>
-    <string name="fmt_usuario_vencido">Usuário: %s</string>
-    <string name="usuario_desconhecido">Usuário Desconhecido</string>
 
     <!-- ═══════════════════════════════════════════════════════════════
          RF33 — Confirmação de Cadastros Pendentes (Anderson V04)
@@ -435,7 +407,26 @@
          RF34 — Lista de Aluguéis ADM (Anderson V04)
          ═══════════════════════════════════════════════════════════════ -->
     <string name="titulo_lista_alugueis">Aluguéis</string>
-    <string name="label_alugado">Alugado:</string>
+    <string name="titulo_livros_vencidos">Livros Vencidos</string>
+    <string name="btn_ver_pendentes">Ver Pendentes</string>
+    <string name="msg_nenhum_vencido">Nenhum livro vencido encontrado.</string>
+    <string name="btn_renovar_aluguel_selecionado">Renovar Aluguel Selecionado</string>
+    <string name="fmt_usuario_vencido">Usuário: %s</string>
+    <string name="fmt_item_atraso">%d dias de atraso</string>
+    <string name="fmt_item_multa">Multa: R$ %s</string>
+    <string name="msg_lista_vencidos_vazia">Nenhum livro vencido na lista.</string>
+    <string name="usuario_desconhecido">Usuário desconhecido</string>
+    <string name="erro_carregar_vencidos">Erro ao carregar livros vencidos.</string>
+    <string name="msg_aluguel_renovado">Aluguel renovado com sucesso!</string>
+    <string name="erro_renovar_aluguel">Erro ao renovar aluguel.</string>
+    <string name="fmt_info_pendencia">Livro: %1$s\nUsuário: %2$s\nPrazo: %3$s\nAtraso: %4$d dias\nMulta: R$ %5$s</string>
+    <string name="notif_atraso_mensagem">Seu aluguel está atrasado. Por favor, devolva o livro.</string>
+    <string name="msg_aviso_atraso_enviado">Aviso de atraso enviado!</string>
+    <string name="notif_multa_mensagem">Você possui uma multa pendente por atraso.</string>
+    <string name="msg_multa_notificada">Multa notificada ao usuário.</string>
+    <string name="msg_aluguel_confirmado">Aluguel confirmado!</string>
+    <string name="msg_registro_removido">Registro removido com sucesso.</string>
+
     <string name="btn_ver_livro">Ver livro</string>
     <string name="btn_ver_usuario">Ver usuário</string>
     <string name="desc_avatar_usuario_aluguel">Avatar do usuário</string>
@@ -452,10 +443,12 @@
     <string name="label_usuario_adm">Usuário</string>
     <string name="hint_usuario_adm">Nome de usuário</string>
     <string name="label_senha_atual_adm">Senha atual</string>
-    <string name="btn_salvar_alteracoes">Salvar Alterações</string>
+
     <string name="btn_redefinir_senha_adm">Redefinir Senha</string>
     <string name="btn_apagar_conta">Apagar conta</string>
+    <string name="btn_salvar_alteracoes">Salvar Alterações</string>
     <string name="desc_editar_campo">Editar campo</string>
+
     <string name="alert_foto_titulo">Foto de Perfil</string>
     <string name="alert_foto_mensagem">Deseja mudar sua foto de perfil?</string>
     <string name="alert_foto_galeria">Escolher da Galeria</string>
@@ -480,8 +473,14 @@
     <string name="erro_min_8_caracteres">• Mínimo de 8 caracteres</string>
     <string name="erro_pelo_menos_numero">• Pelo menos 1 número</string>
     <string name="erro_pelo_menos_maiuscula">• Pelo menos 1 letra maiúscula</string>
-    <string name="erro_senhas_diferentes">As senhas estão diferentes</string>
+
     <string name="msg_sessao_expirada_senha">Sessão expirada. Faça logout e login novamente antes de alterar a senha.</string>
     <string name="erro_alterar_senha">Erro ao alterar senha. Tente novamente.</string>
+
+    <!-- RF37 — Informações do Livro ADM -->
+    <string name="erro_id_livro_nao_fornecido">Erro: ID do livro não fornecido.</string>
+    <string name="msg_editando">Editando campo…</string>
+    <string name="msg_campo_atualizado">Campo atualizado com sucesso!</string>
+    <string name="msg_midia_removida">Mídia removida com sucesso.</string>
 
 </resources>
