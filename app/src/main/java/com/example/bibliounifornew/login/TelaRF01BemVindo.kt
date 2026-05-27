@@ -6,7 +6,11 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.example.bibliounifornew.R
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Tela inicial de Boas-Vindas (RF01)
@@ -28,17 +32,23 @@ class TelaRF01BemVindo : AppCompatActivity() {
         }
     }
 
+    // Decode em Dispatchers.IO — libera a Main Thread e elimina o ANR de frame skip.
+    // lifecycleScope cancela automaticamente se a Activity for destruída antes de concluir,
+    // portanto não há risco de atualizar uma View morta.
     private fun carregarLogoSegura(imageView: ImageView) {
-        try {
-            val options = BitmapFactory.Options().apply {
-                // inSampleSize = 4 reduz a resolução em 4x (consome 16x menos memória)
-                inSampleSize = 4 
-                inJustDecodeBounds = false
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val options = BitmapFactory.Options().apply {
+                    inSampleSize = 4          // 16× menos memória que a imagem original
+                    inJustDecodeBounds = false
+                }
+                val bitmap = BitmapFactory.decodeResource(resources, R.drawable.unifor_marca, options)
+                withContext(Dispatchers.Main) {
+                    imageView.setImageBitmap(bitmap)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            val bitmap = BitmapFactory.decodeResource(resources, R.drawable.unifor_marca, options)
-            imageView.setImageBitmap(bitmap)
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 }
