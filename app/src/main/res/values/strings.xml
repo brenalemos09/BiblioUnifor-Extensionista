@@ -288,4 +288,103 @@
     <string name="btn_criar_conta">CRIAR CONTA</string>
     <string name="label_ja_tem_conta">Já tem uma conta? </string>
     <string name="link_entre_aqui">Entre aqui</string>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         RF28 — Gestão de Usuários ADM (Anderson V04)
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <!-- Labels gerais -->
+    <string name="label_gestao_usuario">Gestão do Usuário</string>
+    <string name="desc_foto_usuario_item">Foto do usuário</string>
+    <string name="sem_titulo">Sem Título</string>
+    <string name="sem_autor">Sem Autor</string>
+
+    <!-- Erros e estados genéricos -->
+    <string name="erro_conexao_banco">Erro na conexão com o banco.</string>
+    <string name="erro_sessao_expirada">Sessão expirada. Faça login novamente.</string>
+    <string name="erro_senha_incorreta">Senha incorreta. Verifique e tente novamente.</string>
+    <string name="erro_generico">Erro ao processar. Tente novamente.</string>
+    <string name="erro_id_usuario_nao_encontrado">Erro: ID do usuário não encontrado.</string>
+    <string name="erro_nao_pode_excluir_proprio">Você não pode remover sua própria conta por aqui.</string>
+    <string name="msg_verificando">Verificando…</string>
+    <string name="msg_buscando_dados">Buscando dados no banco…</string>
+
+    <!-- RF28.5 / RF28.13 — Popup Solicitações -->
+    <string name="popup_solicitacoes_label_usuario">USUÁRIO: %s</string>
+    <string name="popup_solicitacoes_sem_dados">Nenhuma solicitação encontrada.</string>
+    <string name="popup_status_vazio">STATUS: VAZIO</string>
+    <string name="popup_solicitacoes_total">%1$d solicitação(ões) — mais recente: %2$s</string>
+    <string name="popup_status_label">STATUS: %s</string>
+    <string name="popup_data_pedido">Solicitado em: %s</string>
+    <string name="popup_livro_nao_encontrado">Livro não encontrado no sistema.</string>
+
+    <!-- RF28.7 — Popup Atrasos -->
+    <string name="msg_verificando_atrasos">Verificando atrasos…</string>
+    <string name="popup_atraso_sem_pendencias">Nenhum atraso registrado para este usuário.</string>
+    <string name="popup_multa_zero">Multa: R$&#160;0,00</string>
+    <string name="popup_atraso_mensagem">%1$d livro(s) em atraso. Mais recente: %2$s</string>
+    <string name="popup_atraso_sem_titulo">%d livro(s) em atraso.</string>
+
+    <!-- RF28.6 — Livros Alugados -->
+    <string name="msg_nenhum_livro_alugado">Nenhum livro alugado registrado.</string>
+
+    <!-- RF28.9 / RF28.10 — Popup Permissão -->
+    <string name="popup_permissao_titulo">Promover usuário a Administrador?</string>
+    <string name="popup_permissao_descricao">Esta ação concede acesso total ao painel ADM.\nConfirme com sua senha de administrador.</string>
+    <string name="popup_permissao_hint_senha">Sua senha de administrador</string>
+    <string name="popup_permissao_btn_confirmar">Confirmar e Promover</string>
+    <string name="msg_permissao_alterada">Permissão alterada com sucesso!</string>
+
+    <!-- RF28.11 / RF28.12 — Popup Exclusão -->
+    <string name="btn_apagar">Apagar</string>
+    <string name="msg_conta_removida">Conta do usuário removida com sucesso.</string>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         RF30 / RF31 / RF35 — Gestão de Mídias e Acervo (Anderson V04)
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <!-- RF30 — Formato dinâmico dos itens da lista -->
+    <string name="fmt_isbn">ISBN: %s</string>
+    <string name="fmt_isbn_vazio">ISBN: —</string>
+    <string name="fmt_exemplares">Exemplares: %d</string>
+    <string name="fmt_exemplares_vazio">Exemplares: —</string>
+
+    <!-- RF30 — Lista CRUD -->
+    <string name="titulo_gestao_midias">Gestão de Mídias</string>
+    <string name="hint_pesquisar_midia">Pesquisar mídia…</string>
+    <string name="btn_adicionar_midia">Adicionar Nova Mídia</string>
+    <string name="label_acervo_midias">Acervo de Mídias</string>
+    <string name="msg_nenhuma_midia">Nenhuma mídia encontrada.</string>
+    <string name="msg_filtro_aplicado">Filtro aplicado.</string>
+    <string name="msg_filtros_limpos">Filtros limpos.</string>
+    <string name="desc_icone_pesquisa_midia">Ícone de pesquisa</string>
+    <string name="desc_filtro_lista">Filtrar lista</string>
+    <string name="desc_capa_livro_crud">Capa do livro</string>
+    <string name="btn_editar_informacoes">Editar Informações</string>
+    <string name="desc_foto_adm_header">Foto do Administrador</string>
+
+    <!-- RF31 — Cadastro passos 2 e 3 -->
+    <string name="titulo_midia_extras">Informações Extras</string>
+    <string name="titulo_midia_arquivos">Arquivos e Mídia</string>
+    <string name="hint_arquivo_pdf">Caminho ou link do PDF…</string>
+    <string name="hint_arquivo_audiobook">Caminho ou link do Audiobook…</string>
+    <string name="msg_livro_cadastrado_sucesso">Livro cadastrado com sucesso!</string>
+    <string name="erro_preencha_infos_livro">Preencha todas as informações do livro.</string>
+    <string name="erro_data_invalida">Data inválida (dd/mm/aaaa).</string>
+    <string name="erro_quantidade_invalida">Quantidade deve ser um número maior que zero.</string>
+    <string name="erro_preencha_infos_extras">Preencha todas as informações extras</string>
+    <string name="erro_adicione_arquivos">Adicione todos os arquivos necessários</string>
+    <string name="erro_falha_cadastrar_livro">Falha ao cadastrar livro.</string>
+
+    <!-- RF35 — Editar / Apagar mídia -->
+    <string name="popup_apagar_midia_titulo">Apagar mídia?</string>
+    <string name="popup_apagar_midia_descricao">Essa ação não poderá ser desfeita.\nDigite sua senha atual:</string>
+    <string name="popup_apagar_midia_hint_senha">Sua senha</string>
+    <string name="popup_apagar_midia_erro_senha">Digite sua senha atual!</string>
+    <string name="msg_midia_removida">Mídia removida com sucesso.</string>
+    <string name="msg_campo_atualizado">Campo atualizado!</string>
+    <string name="msg_editando">Editando…</string>
+    <string name="erro_id_livro_nao_fornecido">Erro: ID do livro não fornecido.</string>
+    <string name="btn_cancelar">Cancelar</string>
+
 </resources>
