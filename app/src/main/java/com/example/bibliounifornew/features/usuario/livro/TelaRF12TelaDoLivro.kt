@@ -12,15 +12,23 @@ import android.widget.RatingBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import coil.load
 import com.example.bibliounifornew.R
+import com.example.bibliounifornew.data.AppDatabase
 import com.example.bibliounifornew.data.AuthRepository
+import com.example.bibliounifornew.data.EntidadeLivro
+import com.example.bibliounifornew.data.LivroDao
 import com.example.bibliounifornew.data.UsuarioRepository
 import com.example.bibliounifornew.features.usuario.biblioteca.TelaRF14LeituraActivity
 import com.example.bibliounifornew.features.usuario.solicitacao.TelaRF19Solicitacoes
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.SetOptions
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class TelaRF12TelaDoLivro : AppCompatActivity() {
 
@@ -28,9 +36,11 @@ class TelaRF12TelaDoLivro : AppCompatActivity() {
     private val usuarioRepository = UsuarioRepository()
     private val db                = FirebaseFirestore.getInstance()
 
-    private var livroIdAtual : String = ""
-    private var tituloAtual  : String = ""
-    private var autorAtual   : String = ""
+    private var livroIdAtual    : String               = ""
+    private var tituloAtual     : String               = ""
+    private var autorAtual      : String               = ""
+    private var livroListener   : ListenerRegistration? = null
+    private lateinit var livroDao: LivroDao
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,6 +56,8 @@ class TelaRF12TelaDoLivro : AppCompatActivity() {
 
         setContentView(R.layout.telarf12_teladolivro)
 
+        livroDao = AppDatabase.getDatabase(this).livroDao()
+
         carregarDadosDoLivro(livroIdAtual)
         carregarNota()
 
@@ -53,85 +65,141 @@ class TelaRF12TelaDoLivro : AppCompatActivity() {
         configurarBotoesAcao()
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        livroListener?.remove()  // Evita memory leak e callbacks pós-destruição
+    }
+
     // ─── CARREGAMENTO DE DADOS ────────────────────────────────────────────────
 
     private fun carregarDadosDoLivro(id: String) {
-        db.collection("livros").document(id).get()
-            .addOnSuccessListener { doc ->
-                if (!doc.exists()) {
-                    Toast.makeText(this, "Livro não encontrado.", Toast.LENGTH_SHORT).show()
-                    return@addOnSuccessListener
-                }
-                tituloAtual = doc.getString("title")  ?: doc.getString("titulo")  ?: ""
-                autorAtual  = doc.getString("author") ?: doc.getString("autor")   ?: ""
+        // SnapshotListener: recebe atualizações em tempo real e é removido em onDestroy()
+        livroListener = db.collection("livros").document(id)
+            .addSnapshotListener { snapshot, exception ->
 
-                findViewById<TextView>(R.id.textTituloLivro)?.text = tituloAtual
-                findViewById<TextView>(R.id.textAutorLivro)?.text  = autorAtual
-                findViewById<TextView>(R.id.textSobreLivro)?.text  =
-                    doc.getString("description") ?: doc.getString("descricao") ?: ""
-
-                val coverUrl = doc.getString("coverUrl") ?: ""
-                val imgCapa  = findViewById<ImageView>(R.id.imageLivroDetalhes)
-                if (coverUrl.isNotEmpty()) {
-                    imgCapa?.load(coverUrl) {
-                        placeholder(R.drawable.osda)
-                        error(R.drawable.osda)
+                // ── Falha de rede → fallback para cache Room ───────────────────
+                if (exception != null) {
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        val cached = livroDao.buscarLivroPorId(id)
+                        withContext(Dispatchers.Main) {
+                            if (cached != null) {
+                                renderizarDadosDaEntidade(cached)
+                            } else {
+                                Toast.makeText(
+                                    this@TelaRF12TelaDoLivro,
+                                    getString(R.string.erro_sem_conexao_sem_cache),
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
                     }
-                } else {
-                    imgCapa?.setImageResource(R.drawable.osda)
+                    return@addSnapshotListener
                 }
 
-                // ── Categoria ─────────────────────────────────────────────────
-                val categoria = doc.getString("category") ?: doc.getString("categoria") ?: ""
-                if (categoria.isNotEmpty()) {
-                    findViewById<MaterialButton>(R.id.buttonGenero)?.text = categoria
+                if (snapshot == null || !snapshot.exists()) {
+                    Toast.makeText(this, "Livro não encontrado.", Toast.LENGTH_SHORT).show()
+                    return@addSnapshotListener
                 }
 
-                // ── Estoque / Disponibilidade ──────────────────────────────────
-                val estoque    = doc.getLong("estoque") ?: doc.getLong("quantidade")
-                    ?: doc.getLong("stock") ?: 0L
-                val txtDisp    = findViewById<TextView>(R.id.textDisponivel)
-                val txtEstoque = findViewById<TextView>(R.id.textEstoque)
-                val indicador  = findViewById<View>(R.id.statusIndicator)
+                // ── Monta objeto local com os campos do Firestore ──────────────
+                val entidadeRemota = EntidadeLivro(
+                    id            = id,
+                    title         = snapshot.getString("title")       ?: snapshot.getString("titulo")    ?: "",
+                    author        = snapshot.getString("author")      ?: snapshot.getString("autor")     ?: "",
+                    description   = snapshot.getString("description") ?: snapshot.getString("descricao") ?: "",
+                    coverUrl      = snapshot.getString("coverUrl")    ?: "",
+                    category      = snapshot.getString("category")    ?: snapshot.getString("categoria") ?: "",
+                    stockQuantity = (snapshot.getLong("estoque") ?: snapshot.getLong("quantidade")
+                        ?: snapshot.getLong("stock") ?: 0L).toInt(),
+                    isAvailable   = (snapshot.getLong("estoque") ?: snapshot.getLong("quantidade")
+                        ?: snapshot.getLong("stock") ?: 0L) > 0,
+                    linkPdf       = snapshot.getString("linkPdf")       ?: "",
+                    linkAudiobook = snapshot.getString("linkAudiobook") ?: ""
+                )
 
-                if (estoque > 0L) {
-                    txtDisp?.text = "Disponível para aluguel"
-                    txtDisp?.setTextColor(Color.parseColor("#2E7D32"))
-                    txtEstoque?.text = "$estoque unidade${if (estoque == 1L) "" else "s"} em estoque"
-                    indicador?.backgroundTintList =
-                        ColorStateList.valueOf(Color.parseColor("#4CAF50"))
-                } else {
-                    txtDisp?.text = "Indisponível no momento"
-                    txtDisp?.setTextColor(Color.parseColor("#C62828"))
-                    txtEstoque?.text = "Sem estoque"
-                    indicador?.backgroundTintList =
-                        ColorStateList.valueOf(Color.parseColor("#C62828"))
-                }
+                tituloAtual = entidadeRemota.title
+                autorAtual  = entidadeRemota.author
 
-                // ── PDF / Audiobook ──────────────────────────────────────────────────
-                val linkPdf   = doc.getString("linkPdf")
-                val linkAudio = doc.getString("linkAudiobook")
+                // ── Atualiza UI (já estamos na Main Thread) ────────────────────
+                renderizarDadosDaEntidade(entidadeRemota)
 
-                val btnPdf   = findViewById<MaterialButton>(R.id.buttonPdf)
-                val btnAudio = findViewById<MaterialButton>(R.id.buttonAudiobook)
-
-                if (!linkPdf.isNullOrBlank()) {
-                    btnPdf?.visibility = View.VISIBLE
-                    btnPdf?.setOnClickListener { abrirUrlExterna(linkPdf) }
-                } else {
-                    btnPdf?.visibility = View.GONE
-                }
-
-                if (!linkAudio.isNullOrBlank()) {
-                    btnAudio?.visibility = View.VISIBLE
-                    btnAudio?.setOnClickListener { abrirUrlExterna(linkAudio) }
-                } else {
-                    btnAudio?.visibility = View.GONE
+                // ── Persiste no cache Room sem bloquear a UI ───────────────────
+                lifecycleScope.launch(Dispatchers.IO) {
+                    val base = livroDao.buscarLivroPorId(id)
+                    livroDao.inserirLivro(
+                        if (base != null) base.copy(
+                            title         = entidadeRemota.title,
+                            author        = entidadeRemota.author,
+                            description   = entidadeRemota.description,
+                            coverUrl      = entidadeRemota.coverUrl,
+                            category      = entidadeRemota.category,
+                            stockQuantity = entidadeRemota.stockQuantity,
+                            isAvailable   = entidadeRemota.isAvailable,
+                            linkPdf       = entidadeRemota.linkPdf,
+                            linkAudiobook = entidadeRemota.linkAudiobook
+                        ) else entidadeRemota
+                    )
                 }
             }
-            .addOnFailureListener {
-                Toast.makeText(this, "Erro ao carregar livro.", Toast.LENGTH_SHORT).show()
+    }
+
+    // ─── RENDERIZAÇÃO A PARTIR DE EntidadeLivro ───────────────────────────────
+    // Fonte única de renderização — usada tanto pelo Firestore quanto pelo Room.
+
+    private fun renderizarDadosDaEntidade(livro: EntidadeLivro) {
+        tituloAtual = livro.title
+        autorAtual  = livro.author
+
+        findViewById<TextView>(R.id.textTituloLivro)?.text = livro.title
+        findViewById<TextView>(R.id.textAutorLivro)?.text  = livro.author
+        findViewById<TextView>(R.id.textSobreLivro)?.text  = livro.description
+
+        val imgCapa = findViewById<ImageView>(R.id.imageLivroDetalhes)
+        if (livro.coverUrl.isNotEmpty()) {
+            imgCapa?.load(livro.coverUrl) {
+                placeholder(R.drawable.osda)
+                error(R.drawable.osda)
             }
+        } else {
+            imgCapa?.setImageResource(R.drawable.osda)
+        }
+
+        if (livro.category.isNotEmpty()) {
+            findViewById<MaterialButton>(R.id.buttonGenero)?.text = livro.category
+        }
+
+        val txtDisp    = findViewById<TextView>(R.id.textDisponivel)
+        val txtEstoque = findViewById<TextView>(R.id.textEstoque)
+        val indicador  = findViewById<View>(R.id.statusIndicator)
+
+        if (livro.isAvailable) {
+            txtDisp?.text = "Disponível para aluguel"
+            txtDisp?.setTextColor(Color.parseColor("#2E7D32"))
+            txtEstoque?.text = "${livro.stockQuantity} unidade${if (livro.stockQuantity == 1) "" else "s"} em estoque"
+            indicador?.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#4CAF50"))
+        } else {
+            txtDisp?.text = "Indisponível no momento"
+            txtDisp?.setTextColor(Color.parseColor("#C62828"))
+            txtEstoque?.text = "Sem estoque"
+            indicador?.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#C62828"))
+        }
+
+        val btnPdf   = findViewById<MaterialButton>(R.id.buttonPdf)
+        val btnAudio = findViewById<MaterialButton>(R.id.buttonAudiobook)
+
+        if (livro.linkPdf.isNotBlank()) {
+            btnPdf?.visibility = View.VISIBLE
+            btnPdf?.setOnClickListener { abrirUrlExterna(livro.linkPdf) }
+        } else {
+            btnPdf?.visibility = View.GONE
+        }
+
+        if (livro.linkAudiobook.isNotBlank()) {
+            btnAudio?.visibility = View.VISIBLE
+            btnAudio?.setOnClickListener { abrirUrlExterna(livro.linkAudiobook) }
+        } else {
+            btnAudio?.visibility = View.GONE
+        }
     }
 
     // ─── NOTA DO USUÁRIO ──────────────────────────────────────────────────────
