@@ -387,4 +387,101 @@
     <string name="erro_id_livro_nao_fornecido">Erro: ID do livro não fornecido.</string>
     <string name="btn_cancelar">Cancelar</string>
 
+    <!-- ═══════════════════════════════════════════════════════════════
+         RF32 — Financeiro / Controle de Atrasos (Anderson V04)
+         ═══════════════════════════════════════════════════════════════ -->
+    <string name="titulo_livros_vencidos">Livros Vencidos</string>
+    <string name="label_bem_vindo">Bem-vindo</string>
+    <string name="btn_ver_pendentes">Ver pendentes / retirada</string>
+    <string name="msg_nenhum_vencido">Nenhum livro vencido.</string>
+    <string name="btn_renovar_aluguel">Renovar</string>
+    <string name="btn_renovar_aluguel_selecionado">Renovar Aluguel Selecionado</string>
+    <string name="msg_lista_vencidos_vazia">Não há livros vencidos no momento.</string>
+    <string name="msg_aviso_atraso_enviado">Aviso de atraso enviado.</string>
+    <string name="msg_multa_notificada">Notificação de multa enviada.</string>
+    <string name="msg_aluguel_confirmado">Aluguel confirmado com sucesso.</string>
+    <string name="msg_registro_removido">Registro removido.</string>
+    <string name="msg_aluguel_renovado">Aluguel renovado por 14 dias.</string>
+    <string name="erro_renovar_aluguel">Falha ao renovar aluguel. Tente novamente.</string>
+    <string name="erro_carregar_vencidos">Erro ao carregar livros vencidos.</string>
+    <string name="popup_pendentes_titulo">Detalhes da Pendência</string>
+    <string name="popup_pendentes_btn_notif_atraso">Notificar atraso</string>
+    <string name="popup_pendentes_btn_notif_valor">Notificar valor</string>
+    <string name="popup_pendentes_btn_confirmar">Confirmar aluguel</string>
+    <string name="popup_pendentes_btn_remover">Remover registro\n(Ação irreversível)</string>
+    <string name="fmt_info_pendencia">Livro: %1$s\nUsuário: %2$s\nPrazo: %3$s\nAtraso: %4$d dia(s)\nMulta est.: R$ %5$s</string>
+    <string name="notif_atraso_mensagem">Seu aluguel está atrasado. Regularize para evitar bloqueios.</string>
+    <string name="notif_multa_mensagem">Existe valor pendente referente ao seu aluguel.</string>
+    <string name="fmt_item_atraso">Atraso: %d dia(s)</string>
+    <string name="fmt_item_multa">Multa est.: R$ %s</string>
+    <string name="fmt_usuario_vencido">Usuário: %s</string>
+    <string name="usuario_desconhecido">Usuário Desconhecido</string>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         RF33 — Confirmação de Cadastros Pendentes (Anderson V04)
+         ═══════════════════════════════════════════════════════════════ -->
+    <string name="titulo_confirmacao_cadastros">Confirmação</string>
+    <string name="desc_icone_busca_usuario">Ícone de busca de usuário</string>
+    <string name="hint_procurar_usuario">Procure um usuário…</string>
+    <string name="erro_carregar_pendentes">Não foi possível carregar os cadastros pendentes.</string>
+    <string name="fmt_cadastro_confirmado">Cadastro de %s confirmado!</string>
+    <string name="erro_confirmar_cadastro">Não foi possível confirmar o cadastro. Tente novamente.</string>
+    <string name="popup_confirmacao_texto">Esse usuário ainda não confirmou o e-mail. Confirmar mesmo assim?</string>
+    <string name="popup_confirmacao_btn_confirmar">Confirmar Cadastro</string>
+    <string name="popup_confirmacao_btn_voltar">Voltar</string>
+    <string name="desc_foto_usuario_confirmacao">Foto do usuário</string>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         RF34 — Lista de Aluguéis ADM (Anderson V04)
+         ═══════════════════════════════════════════════════════════════ -->
+    <string name="titulo_lista_alugueis">Aluguéis</string>
+    <string name="label_alugado">Alugado:</string>
+    <string name="btn_ver_livro">Ver livro</string>
+    <string name="btn_ver_usuario">Ver usuário</string>
+    <string name="desc_avatar_usuario_aluguel">Avatar do usuário</string>
+    <string name="desc_capa_livro_aluguel">Capa do livro</string>
+    <string name="msg_nenhum_aluguel_colecao">Nenhum aluguel encontrado.</string>
+    <string name="erro_carregar_alugueis">Erro ao carregar aluguéis.</string>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         RF36 — Configurações ADM (Anderson V04)
+         ═══════════════════════════════════════════════════════════════ -->
+    <string name="titulo_config_adm">Configurações ADM</string>
+    <string name="label_nome_adm">Nome</string>
+    <string name="hint_nome_adm">Seu nome</string>
+    <string name="label_usuario_adm">Usuário</string>
+    <string name="hint_usuario_adm">Nome de usuário</string>
+    <string name="label_senha_atual_adm">Senha atual</string>
+    <string name="btn_salvar_alteracoes">Salvar Alterações</string>
+    <string name="btn_redefinir_senha_adm">Redefinir Senha</string>
+    <string name="btn_apagar_conta">Apagar conta</string>
+    <string name="desc_editar_campo">Editar campo</string>
+    <string name="alert_foto_titulo">Foto de Perfil</string>
+    <string name="alert_foto_mensagem">Deseja mudar sua foto de perfil?</string>
+    <string name="alert_foto_galeria">Escolher da Galeria</string>
+    <string name="erro_preencha_nome_usuario">Preencha nome e usuário.</string>
+    <string name="msg_alteracoes_salvas">Alterações salvas com sucesso!</string>
+    <string name="erro_salvar_perfil">Erro ao salvar. Tente novamente.</string>
+    <string name="msg_foto_atualizada">Foto atualizada com sucesso!</string>
+    <string name="erro_processar_imagem">Erro ao processar imagem.</string>
+    <string name="msg_conta_apagada_sucesso">Conta apagada com sucesso.</string>
+    <string name="erro_apagar_conta">Erro ao apagar conta. Tente novamente.</string>
+    <string name="erro_senha_vazia_apagar">Digite sua senha para confirmar.</string>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         RF37 — Redefinir Senha ADM Interno (Anderson V04)
+         ═══════════════════════════════════════════════════════════════ -->
+    <string name="desc_fechar_tela">Fechar</string>
+    <string name="label_nova_senha">Nova senha</string>
+    <string name="hint_nova_senha">Digite a nova senha</string>
+    <string name="label_confirmacao_senha">Confirmação de senha</string>
+    <string name="hint_confirmacao_senha">Confirme a nova senha</string>
+    <string name="erro_senha_igual_anterior">A senha não pode ser igual à anterior</string>
+    <string name="erro_min_8_caracteres">• Mínimo de 8 caracteres</string>
+    <string name="erro_pelo_menos_numero">• Pelo menos 1 número</string>
+    <string name="erro_pelo_menos_maiuscula">• Pelo menos 1 letra maiúscula</string>
+    <string name="erro_senhas_diferentes">As senhas estão diferentes</string>
+    <string name="msg_sessao_expirada_senha">Sessão expirada. Faça logout e login novamente antes de alterar a senha.</string>
+    <string name="erro_alterar_senha">Erro ao alterar senha. Tente novamente.</string>
+
 </resources>
