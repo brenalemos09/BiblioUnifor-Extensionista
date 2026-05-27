@@ -38,7 +38,11 @@ class TelaRF37InfoLivroADM : AppCompatActivity() {
         if (livroId.isNotEmpty()) {
             carregarDadosLivro()
         } else {
+            // GAP-2 FIX: ID ausente → não deixa tela vazia com "O Alienista" do XML.
+            // Toast + finish() retornam imediatamente para RF32 sem estado quebrado.
             Toast.makeText(this, getString(R.string.erro_id_livro_nao_fornecido), Toast.LENGTH_SHORT).show()
+            finish()
+            return
         }
 
         // Configurar cliques dos lápis para editar campos

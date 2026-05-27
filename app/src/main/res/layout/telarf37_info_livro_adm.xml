@@ -43,7 +43,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:scaleType="centerCrop"
-                android:src="@drawable/o_alienista_capa"
+                android:src="@drawable/osda"
+                tools:src="@drawable/o_alienista_capa"
                 android:contentDescription="@string/desc_capa_livro_crud" />
 
         </com.google.android.material.card.MaterialCardView>
@@ -58,7 +59,8 @@
             android:background="@android:color/transparent"
             android:enabled="false"
             android:fontFamily="sans-serif-black"
-            android:text="O Alienista"
+            android:text=""
+            tools:text="O Alienista"
             android:textColor="@color/white"
             android:textSize="26sp"
             app:layout_constraintEnd_toStartOf="@id/btnEditTitulo"
