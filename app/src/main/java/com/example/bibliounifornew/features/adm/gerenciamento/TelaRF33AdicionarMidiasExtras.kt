@@ -7,11 +7,9 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.bibliounifornew.R
 import com.google.android.material.button.MaterialButton
-import com.google.firebase.firestore.FirebaseFirestore
 
 class TelaRF33AdicionarMidiasExtras : AppCompatActivity() {
 
-    private val db = FirebaseFirestore.getInstance()
     private var livroId: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,35 +40,11 @@ class TelaRF33AdicionarMidiasExtras : AppCompatActivity() {
 
             btnAvancar.isEnabled = false
 
-            // ── Salva campos extras no documento já criado no Passo 1 ──────
-            val atualizacoes = hashMapOf<String, Any>(
-                "pageCount"   to (paginas.toLongOrNull() ?: 0L),
-                "category"    to categoria,
-                "categoria"   to categoria,
-                "publisher"   to editora,
-                "editora"     to editora,
-                "description" to sinopse,
-                "descricao"   to sinopse,
-                "coverUrl"    to linkCapa,
-                "imagemUrl"   to linkCapa
-            )
-
-            if (livroId.isNotEmpty()) {
-                db.collection("livros").document(livroId)
-                    .update(atualizacoes)
-                    .addOnSuccessListener {
-                        btnAvancar.isEnabled = true
-                        avancarParaArquivos()
-                    }
-                    .addOnFailureListener {
-                        btnAvancar.isEnabled = true
-                        Toast.makeText(this, getString(R.string.erro_conexao_banco), Toast.LENGTH_SHORT).show()
-                    }
-            } else {
-                // Edge case: livroId vazio (cadastro fora do fluxo normal) — avança sem salvar
+            // Protótipo: Simulação de sucesso
+            btnAvancar.postDelayed({
                 btnAvancar.isEnabled = true
                 avancarParaArquivos()
-            }
+            }, 500)
         }
     }
 

@@ -15,19 +15,16 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.bibliounifornew.R
 import com.example.bibliounifornew.features.adm.gerenciamento.NavigationHelperADM
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
 
 class TelaRF31Solicitacoes : AppCompatActivity() {
 
-    private val db              = FirebaseFirestore.getInstance()
     private lateinit var adapter: SolicitacoesMidiaAdapter
     private val listaSolicit    = mutableListOf<ItemSolicitacaoMidia>()
 
     // Launcher moderno — substitui startActivityForResult deprecado
     private val fileLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
-    ) { /* resultado não usado: a aprovação já foi salva no Firestore */ }
+    ) { /* resultado não usado no protótipo */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,91 +54,25 @@ class TelaRF31Solicitacoes : AppCompatActivity() {
         val btnFiltro = findViewById<ImageView>(R.id.buttonFiltroMidia)
         btnFiltro?.setOnClickListener { abrirPopupFiltro() }
 
-        carregarSolicitacoes()
+        carregarSolicitacoesMock()
         NavigationHelperADM.configurarBarraNavegacao(this)
     }
 
     /**
-     * Carrega solicitações de mídia (tipo_midia != null) da coleção solicitacoes_midia.
-     * Se não existir essa coleção, usa solicitacoes_emprestimo com filtro de tipo.
+     * Carrega solicitações de mídia mockadas para o protótipo.
      */
+    private fun carregarSolicitacoesMock() {
+        val mockData = listOf(
+            ItemSolicitacaoMidia("1", "u1", "l1", "PDF", "pendente", "João Silva", "O Hobbit", "J.R.R. Tolkien"),
+            ItemSolicitacaoMidia("2", "u2", "l2", "Audiobook", "pendente", "Maria Oliveira", "1984", "George Orwell"),
+            ItemSolicitacaoMidia("3", "u3", "l3", "Braille", "pendente", "Carlos Santos", "Dom Casmurro", "Machado de Assis")
+        )
+        adapter.atualizarLista(mockData)
+    }
+
     private fun carregarSolicitacoes() {
-        db.collection("solicitacoes_midia")
-            .whereEqualTo("status", "pendente")
-            .get()
-            .addOnSuccessListener { result ->
-                val docs = result.documents
-                if (docs.isEmpty()) {
-                    listaSolicit.clear()
-                    adapter.notifyDataSetChanged()
-                    Toast.makeText(this, "Nenhuma solicitação de mídia pendente.", Toast.LENGTH_SHORT).show()
-                    return@addOnSuccessListener
-                }
-
-                val total       = docs.size
-                var processados = 0
-                val listaTemp   = mutableListOf<ItemSolicitacaoMidia>()
-
-                for (doc in docs) {
-                    val docId       = doc.id
-                    val uidUsuario  = doc.getString("uidUsuario") ?: doc.getString("uidAluno") ?: ""
-                    val idLivro     = doc.getString("idLivro")    ?: ""
-                    val tipos       = doc.getString("tipos")      ?: ""
-                    val status      = doc.getString("status")     ?: "pendente"
-
-                    val base = ItemSolicitacaoMidia(
-                        docId       = docId,
-                        uidUsuario  = uidUsuario,
-                        idLivro     = idLivro,
-                        tiposSolicit = tipos,
-                        status      = status
-                    )
-                    listaTemp.add(base)
-
-                    var nomeUsuario = "Usuário"
-                    var titulo      = "Título Indisponível"
-                    var autor       = "Autor Desconhecido"
-                    var joinsLeft   = 2
-
-                    fun verificar() {
-                        joinsLeft--
-                        if (joinsLeft == 0) {
-                            val idx = listaTemp.indexOfFirst { it.docId == docId }
-                            if (idx >= 0) {
-                                listaTemp[idx] = listaTemp[idx].copy(
-                                    nomeUsuario = nomeUsuario,
-                                    tituloLivro = titulo,
-                                    autorLivro  = autor
-                                )
-                            }
-                            processados++
-                            if (processados == total) {
-                                adapter.atualizarLista(listaTemp)
-                            }
-                        }
-                    }
-
-                    if (uidUsuario.isNotEmpty()) {
-                        db.collection("usuarios").document(uidUsuario).get()
-                            .addOnSuccessListener { u ->
-                                nomeUsuario = u.getString("nome") ?: u.getString("email") ?: "Usuário"
-                                verificar()
-                            }.addOnFailureListener { verificar() }
-                    } else verificar()
-
-                    if (idLivro.isNotEmpty()) {
-                        db.collection("livros").document(idLivro).get()
-                            .addOnSuccessListener { l ->
-                                titulo = l.getString("title")  ?: l.getString("titulo") ?: "Título Indisponível"
-                                autor  = l.getString("author") ?: l.getString("autor")  ?: "Autor Desconhecido"
-                                verificar()
-                            }.addOnFailureListener { verificar() }
-                    } else verificar()
-                }
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Erro ao carregar solicitações: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+        // Redireciona para mock no protótipo
+        carregarSolicitacoesMock()
     }
 
     // ─── POPUP VER SOLICITAÇÕES DO USUÁRIO ───────────────────────────────────
@@ -170,12 +101,10 @@ class TelaRF31Solicitacoes : AppCompatActivity() {
                 addCategory(Intent.CATEGORY_OPENABLE)
             }
             fileLauncher.launch(Intent.createChooser(intent, "Selecione o arquivo"))
-            db.collection("solicitacoes_midia").document(item.docId)
-                .set(mapOf("status" to "concluido", "status_$tipo" to "aprovado"), SetOptions.merge())
-                .addOnSuccessListener {
-                    criarNotificacaoMidia(item.uidUsuario)
-                    Toast.makeText(this, "${tipo.replaceFirstChar { it.uppercase() }} aprovado e usuário notificado.", Toast.LENGTH_SHORT).show()
-                }
+            
+            // Simulação de sucesso no protótipo
+            Toast.makeText(this, "${tipo.replaceFirstChar { it.uppercase() }} aprovado e usuário notificado.", Toast.LENGTH_SHORT).show()
+            
         } catch (e: Exception) {
             Toast.makeText(this, "Erro ao abrir seletor de arquivo.", Toast.LENGTH_SHORT).show()
         }
@@ -184,29 +113,8 @@ class TelaRF31Solicitacoes : AppCompatActivity() {
     // ─── NOTIFICAR BRAILLE ────────────────────────────────────────────────────
 
     private fun notificarBraille(item: ItemSolicitacaoMidia) {
-        db.collection("solicitacoes_midia").document(item.docId)
-            .set(mapOf("status" to "concluido", "status_braille" to "aprovado"), SetOptions.merge())
-            .addOnSuccessListener {
-                criarNotificacaoMidia(item.uidUsuario)
-                Toast.makeText(this, "Braille aprovado e usuário notificado.", Toast.LENGTH_SHORT).show()
-            }
-            .addOnFailureListener {
-                Toast.makeText(this, "Erro ao notificar usuário.", Toast.LENGTH_SHORT).show()
-            }
-    }
-
-    // ─── HELPER: cria notificação na subcoleção do usuário ────────────────────
-
-    private fun criarNotificacaoMidia(uidAluno: String) {
-        if (uidAluno.isEmpty()) return
-        val notif = hashMapOf(
-            "titulo"   to "Sua mídia está pronta!",
-            "mensagem" to "O ADM liberou o acesso ao seu material especial.",
-            "lida"     to false,
-            "data"     to System.currentTimeMillis()
-        )
-        db.collection("usuarios").document(uidAluno)
-            .collection("notificacoes").add(notif)
+        // Simulação de sucesso no protótipo
+        Toast.makeText(this, "Braille aprovado e usuário notificado.", Toast.LENGTH_SHORT).show()
     }
 
     // ─── POPUP EXCLUIR ────────────────────────────────────────────────────────
@@ -239,15 +147,10 @@ class TelaRF31Solicitacoes : AppCompatActivity() {
                 Toast.makeText(this, "Credencial incorreta.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            db.collection("solicitacoes_midia").document(item.docId)
-                .delete()
-                .addOnSuccessListener {
-                    adapter.removerItem(position)
-                    Toast.makeText(this, "Solicitação excluída.", Toast.LENGTH_SHORT).show()
-                }
-                .addOnFailureListener { e ->
-                    Toast.makeText(this, "Erro ao excluir: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
+            
+            // Simulação no protótipo
+            adapter.removerItem(position)
+            Toast.makeText(this, "Solicitação excluída.", Toast.LENGTH_SHORT).show()
             dialog.dismiss()
         }
 

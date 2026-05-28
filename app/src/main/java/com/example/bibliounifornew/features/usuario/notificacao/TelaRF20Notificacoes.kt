@@ -9,108 +9,50 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import coil.load
 import com.example.bibliounifornew.R
-import com.example.bibliounifornew.data.AuthRepository
-import com.example.bibliounifornew.data.UsuarioRepository
-import com.example.bibliounifornew.features.usuario.livro.TelaLivroActivity
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ListenerRegistration
+import com.example.bibliounifornew.data.Notificacao
+import com.example.bibliounifornew.features.usuario.livro.TelaRF12TelaDoLivro
 
-/**
- * TelaRF20Notificacoes — Lista de notificações do usuário em tempo real.
- *
- * Fonte de dados: subcoleção Firestore usuarios/{uid}/notificacoes
- * Listener: SnapshotListener (atualiza a UI automaticamente quando o ADM
- * cria ou altera notificações, sem necessidade de recarregar a tela).
- *
- * Ciclo de vida do listener:
- * onCreate  → registra o SnapshotListener
- * onDestroy → cancela o SnapshotListener (evita memory leak)
- */
 class TelaRF20Notificacoes : AppCompatActivity() {
 
-    private val authRepository    = AuthRepository()
-    private val usuarioRepository = UsuarioRepository()
     private lateinit var adapter  : NotificacaoAdapter
-
-    // Ambos os listeners são cancelados em onDestroy
-    private var listenerPerfil      : ListenerRegistration? = null
-    private var listenerNotificacoes: ListenerRegistration? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.telarf20_notificacoes)
 
-        val usuarioAtual = authRepository.getUsuarioAtual()
-        if (usuarioAtual == null) {
-            startActivity(Intent(this, com.example.bibliounifornew.login.TelaRF03LoginAluno::class.java))
-            finish()
-            return
-        }
-
         // ─── CABEÇALHO ────────────────────────────────────────────────────────
-        configurarCabecalho(usuarioAtual.uid)
+        configurarCabecalho()
 
         // ─── RECYCLERVIEW ─────────────────────────────────────────────────────
-        configurarRecyclerView(usuarioAtual.uid)
+        configurarRecyclerView()
     }
 
-    // ─── CABEÇALHO ────────────────────────────────────────────────────────────
-
-    /**
-     * Atualiza nome e foto do usuário em tempo real via SnapshotListener.
-     * IDs do XML: textNomeNotif, imagePerfilNotif
-     */
-    private fun configurarCabecalho(uid: String) {
+    private fun configurarCabecalho() {
         val textNome    = findViewById<TextView>(R.id.textNomeNotif)
         val imagePerfil = findViewById<ImageView>(R.id.imagePerfilNotif)
 
-        textNome?.text = "Carregando..."
-
-        listenerPerfil = usuarioRepository.observarPerfilUsuario(uid) { dados ->
-            if (dados != null) {
-                textNome?.text = dados["nome"] as? String ?: "Usuário"
-                val fotoUrl = dados["fotoUrl"] as? String ?: ""
-                if (fotoUrl.isNotEmpty()) {
-                    imagePerfil?.load(fotoUrl) {
-                        placeholder(R.drawable.user_placeholder)
-                        error(R.drawable.user_placeholder)
-                    }
-                }
-            }
-        }
+        textNome?.text = "João Silva"
+        imagePerfil?.setImageResource(R.drawable.user_placeholder)
     }
 
-    // ─── RECYCLERVIEW + SNAPSHOT LISTENER ────────────────────────────────────
-
-    /**
-     * Configura o RecyclerView com o [NotificacaoAdapter] e o swipe-to-dismiss.
-     */
-    private fun configurarRecyclerView(uid: String) {
+    private fun configurarRecyclerView() {
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerViewNotificacoes)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
         adapter = NotificacaoAdapter(
             lista        = mutableListOf(),
             onNotifClick = { notif ->
-                // Se a notificação tem livroId → navega direto para o livro
                 if (notif.livroId.isNotEmpty()) {
-                    startActivity(
-                        Intent(this, TelaLivroActivity::class.java)
-                            .putExtra("LIVRO_ID", notif.livroId)
-                    )
+                    val intent = Intent(this, TelaRF12TelaDoLivro::class.java)
+                        .putExtra("LIVRO_ID", notif.livroId)
+                    startActivity(intent)
                 }
             }
         )
         recyclerView.adapter = adapter
 
-        // ── SnapshotListener — atualiza a lista em tempo real ─────────────────
-        listenerNotificacoes = usuarioRepository.escutarNotificacoes(uid) { lista ->
-            if (!isFinishing && !isDestroyed) {
-                adapter.atualizarLista(lista)
-            }
-        }
+        carregarNotificacoesMock()
 
         // ── Swipe-to-dismiss ──────────────────────────────────────────────────
         val swipeHandler = object : ItemTouchHelper.SimpleCallback(
@@ -121,36 +63,50 @@ class TelaRF20Notificacoes : AppCompatActivity() {
                 rv         : RecyclerView,
                 viewHolder : RecyclerView.ViewHolder,
                 target     : RecyclerView.ViewHolder
-            ): Boolean = false // sem drag-and-drop
+            ): Boolean = false
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val position = viewHolder.adapterPosition
-                if (position != RecyclerView.NO_ID.toInt()) {
-                    val notif = adapter.getNotificacaoAt(position)
-
-                    // Exclui do Firestore primeiro
-                    FirebaseFirestore.getInstance()
-                        .collection("usuarios")
-                        .document(uid)
-                        .collection("notificacoes")
-                        .document(notif.id)
-                        .delete()
-                        .addOnSuccessListener {
-                            adapter.removerItem(position)
-                            Toast.makeText(this@TelaRF20Notificacoes, "Notificação descartada", Toast.LENGTH_SHORT).show()
-                        }
-                }
+                adapter.removerItem(position)
+                Toast.makeText(this@TelaRF20Notificacoes, "Notificação descartada", Toast.LENGTH_SHORT).show()
             }
         }
         ItemTouchHelper(swipeHandler).attachToRecyclerView(recyclerView)
     }
 
-    // ─── CICLO DE VIDA ────────────────────────────────────────────────────────
-
-    override fun onDestroy() {
-        super.onDestroy()
-        // Cancela AMBOS os listeners para evitar memory leak
-        listenerPerfil?.remove()
-        listenerNotificacoes?.remove()
+    private fun carregarNotificacoesMock() {
+        val mockData = listOf(
+            Notificacao(
+                id = "1",
+                titulo = "Livro Disponível!",
+                descricao = "O livro '1984' que você desejava está disponível para aluguel.",
+                timestamp = System.currentTimeMillis(),
+                lida = false,
+                livroId = "9788535914061",
+                autor = "George Orwell",
+                coverUrl = "https://m.media-amazon.com/images/I/91SZS6B7-CL.jpg"
+            ),
+            Notificacao(
+                id = "2",
+                titulo = "Devolução Próxima",
+                descricao = "Lembre-se de devolver 'O Pequeno Príncipe' em 2 dias.",
+                timestamp = System.currentTimeMillis() - 3600000,
+                lida = true,
+                livroId = "9788533302273",
+                autor = "Antoine de Saint-Exupéry",
+                coverUrl = "https://m.media-amazon.com/images/I/8179u87mZ+L.jpg"
+            ),
+            Notificacao(
+                id = "3",
+                titulo = "Novo Livro Adicionado",
+                descricao = "Confira a nova obra de Martin Fowler em nosso acervo.",
+                timestamp = System.currentTimeMillis() - 86400000,
+                lida = false,
+                livroId = "9788575227244",
+                autor = "Martin Fowler",
+                coverUrl = "https://m.media-amazon.com/images/I/41-S6T6A6vL.jpg"
+            )
+        )
+        adapter.atualizarLista(mockData)
     }
 }

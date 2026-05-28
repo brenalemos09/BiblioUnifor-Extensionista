@@ -6,100 +6,88 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.widget.Button
+import android.text.Editable
+import android.text.TextWatcher
+import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.bibliounifornew.R
-import com.example.bibliounifornew.data.AuthRepository
-import com.example.bibliounifornew.data.UsuarioRepository
 import com.example.bibliounifornew.features.usuario.perfil.NavigationHelper
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
 
 class TelaRF21Historico : AppCompatActivity() {
 
-    private val authRepository    = AuthRepository()
-    private val usuarioRepository = UsuarioRepository()
-    private val db                = FirebaseFirestore.getInstance()
-
     private lateinit var adapter  : HistoricoAdapter
     private val listaHistorico    = mutableListOf<ItemHistorico>()
-    private var usuarioId         : String = ""
+    private val listaFiltrada     = mutableListOf<ItemHistorico>()
+    private var usuarioId         : String = "mock_user_123"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.telarf21_historico)
 
-        // ─── AUTENTICAÇÃO E SESSÃO SEGURA ─────────────────────────────────────
+        // ─── CABEÇALHO ────────────────────────────────────────────────────────
         val textCabecalho = findViewById<TextView>(R.id.textEmailHistorico)
-        val usuarioAtual  = authRepository.getUsuarioAtual()
+        textCabecalho?.text = "joao.silva@unifor.br"
 
-        if (usuarioAtual != null) {
-            usuarioId          = usuarioAtual.uid
-            textCabecalho?.text = usuarioAtual.email
-        } else {
-            startActivity(Intent(this, com.example.bibliounifornew.login.TelaRF03LoginAluno::class.java))
-            finish()
-            return
-        }
+        NavigationHelper.configurarBarraNavegacao(this)
 
-        // ─── BARRA DE NAVEGAÇÃO FIXA ──────────────────────────────────────────
-        try {
-            // Referência direta ao objeto NavigationHelper no mesmo pacote
-            NavigationHelper.configurarBarraNavegacao(this)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        // ─── PESQUISA ────────────────────────────────────────────────────────
+        val editPesquisa = findViewById<EditText>(R.id.editPesquisaHistorico)
+        editPesquisa?.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                filtrar(s.toString())
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
 
-        // ─── RECYCLERVIEW DINÂMICO ─────────────────────────────────────────────
+        // ─── RECYCLERVIEW ─────────────────────────────────────────────────────
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerViewHistorico)
-        adapter = HistoricoAdapter(listaHistorico) { item, position ->
+        adapter = HistoricoAdapter(listaFiltrada) { item, position ->
             showPopupRemover(item.titulo) {
-                // Remove fisicamente do Firestore usando o repositório integrado
-                usuarioRepository.removerDoHistorico(usuarioId, item.livroId) { sucesso ->
-                    if (sucesso) {
-                        adapter.removerItem(position)
-                        Toast.makeText(this, "Item removido do seu histórico.", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(this, "Falha ao remover. Tente novamente.", Toast.LENGTH_SHORT).show()
-                    }
-                }
+                val originalPos = listaHistorico.indexOf(item)
+                if (originalPos != -1) listaHistorico.removeAt(originalPos)
+                
+                adapter.removerItem(position)
+                Toast.makeText(this, "Item removido do seu histórico.", Toast.LENGTH_SHORT).show()
             }
         }
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
 
-        // ─── CONSULTA FIRESTORE REAL ───────────────────────────────────────────
         carregarHistorico()
     }
 
-    /**
-     * Carrega os dados reais do histórico ordenados por data de adição
-     */
     private fun carregarHistorico() {
-        db.collection("historico_usuarios")
-            .whereEqualTo("usuarioId", usuarioId)
-            // .orderBy("adicionadoEm", Query.Direction.DESCENDING) // Comentado para evitar erro de índice ausente no Firestore
-            .get()
-            .addOnSuccessListener { result ->
-                listaHistorico.clear()
-                val itens = result.documents.mapNotNull { document ->
-                    val livroId  = document.getString("livroId") ?: ""
-                    val titulo   = document.getString("titulo") ?: "Título Indisponível"
-                    val autor    = document.getString("autor") ?: "Autor Desconhecido"
-                    val acao     = document.getString("acao") ?: "Adicionado"
-                    val dataLido = document.getLong("adicionadoEm") ?: 0L
-                    ItemHistorico(livroId, titulo, autor, acao, dataLido)
-                }.sortedByDescending { it.dataLido }
-                
-                listaHistorico.addAll(itens)
-                adapter.notifyDataSetChanged()
+        listaHistorico.clear()
+        val mockData = listOf(
+            ItemHistorico("1", "O Codificador Limpo", "Robert C. Martin", "Lido", System.currentTimeMillis() - 86400000 * 5),
+            ItemHistorico("2", "Design Patterns", "Gang of Four", "Lido", System.currentTimeMillis() - 86400000 * 15),
+            ItemHistorico("3", "Refatoração", "Martin Fowler", "Lido", System.currentTimeMillis() - 86400000 * 30),
+            ItemHistorico("4", "Kotlin em Ação", "Dmitry Jemerov", "Lido", System.currentTimeMillis() - 86400000 * 45)
+        )
+        listaHistorico.addAll(mockData)
+        listaFiltrada.clear()
+        listaFiltrada.addAll(listaHistorico)
+        adapter.notifyDataSetChanged()
+    }
+
+    private fun filtrar(texto: String) {
+        listaFiltrada.clear()
+        if (texto.isEmpty()) {
+            listaFiltrada.addAll(listaHistorico)
+        } else {
+            val query = texto.lowercase()
+            listaHistorico.forEach {
+                if (it.titulo.lowercase().contains(query) || it.autor.lowercase().contains(query)) {
+                    listaFiltrada.add(it)
+                }
             }
-            .addOnFailureListener {
-                Toast.makeText(this, "Erro ao carregar histórico.", Toast.LENGTH_SHORT).show()
-            }
+        }
+        adapter.notifyDataSetChanged()
     }
 
     private fun showPopupRemover(nomeLivro: String, onConfirm: () -> Unit) {

@@ -10,11 +10,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.example.bibliounifornew.R
 import com.google.android.material.button.MaterialButton
-import com.google.firebase.firestore.FirebaseFirestore
 
 class TelaRF33CadastroLivro : AppCompatActivity() {
 
-    private val db            = FirebaseFirestore.getInstance()
     private lateinit var etData: EditText
 
     // Launcher para obter o resultado do calendário
@@ -71,41 +69,17 @@ class TelaRF33CadastroLivro : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // ── Salvar no Firestore ───────────────────────────────────────────
+            // ── Simulação de Sucesso (Protótipo) ──────────────────────────────
             tvErro.visibility    = View.GONE
-            btnAvancar.isEnabled = false
-
-            val dados = hashMapOf(
-                "title"          to titulo,
-                "titulo"         to titulo,
-                "author"         to autor,
-                "autor"          to autor,
-                "isbn"           to isbn,
-                "codigo_isbn"    to isbn,
-                "dataPublicacao" to data,
-                "quantidade"     to quantidade,
-                "exemplares"     to quantidade,
-                "criadoEm"       to System.currentTimeMillis()
-            )
-
-            db.collection("livros")
-                .add(dados)
-                .addOnSuccessListener { docRef ->
-                    btnAvancar.isEnabled = true
-                    Toast.makeText(this, getString(R.string.msg_livro_cadastrado_sucesso), Toast.LENGTH_SHORT).show()
-                    val intent = Intent(this, TelaRF33AdicionarMidiasExtras::class.java)
-                    intent.putExtra("LIVRO_ID", docRef.id)
-                    startActivity(intent)
-                    finish()
-                }
-                .addOnFailureListener { e ->
-                    btnAvancar.isEnabled = true
-                    tvErro.visibility    = View.VISIBLE
-                    tvErro.text          = getString(R.string.erro_conexao_banco)
-                    Toast.makeText(this, getString(R.string.erro_falha_cadastrar_livro), Toast.LENGTH_SHORT).show()
-                }
+            Toast.makeText(this, getString(R.string.msg_livro_cadastrado_sucesso), Toast.LENGTH_SHORT).show()
+            
+            val intent = Intent(this, TelaRF33AdicionarMidiasExtras::class.java)
+            intent.putExtra("LIVRO_ID", "MOCK_ID")
+            startActivity(intent)
+            finish()
         }
     }
+
 
     private fun validarFormatoData(data: String): Boolean =
         data.matches(Regex("""\d{2}/\d{2}/\d{4}"""))

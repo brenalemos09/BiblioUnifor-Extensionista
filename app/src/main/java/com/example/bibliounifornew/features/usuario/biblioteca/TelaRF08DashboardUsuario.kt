@@ -1,21 +1,14 @@
 package com.example.bibliounifornew.features.usuario.biblioteca
 
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.net.Uri
 import android.os.Bundle
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import coil.load
 import com.example.bibliounifornew.R
-import com.example.bibliounifornew.data.AuthRepository
-import com.example.bibliounifornew.data.UsuarioRepository
 import com.example.bibliounifornew.features.usuario.amigo.TelaRF17Amigos
 import com.example.bibliounifornew.features.usuario.livro.TelaRF11TelaDePesquisa
 import com.example.bibliounifornew.features.usuario.livro.TelaRF12TelaDoLivro
@@ -26,24 +19,10 @@ import com.example.bibliounifornew.features.usuario.perfil.TelaRF09Configuracao
 import com.example.bibliounifornew.features.usuario.solicitacao.TelaRF18StatusAluguel
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.imageview.ShapeableImageView
-import com.google.firebase.firestore.FieldPath
-import com.google.firebase.firestore.FirebaseFirestore
-import java.io.ByteArrayOutputStream
 
 class TelaRF08DashboardUsuario : AppCompatActivity() {
 
-    private val authRepository    = AuthRepository()
-    private val usuarioRepository = UsuarioRepository()
-    private val db                = FirebaseFirestore.getInstance()
-
     private lateinit var imagePerfil: ShapeableImageView
-
-    // Launcher para selecionar imagem da galeria
-    private val getGalleryImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-        uri?.let {
-            processarESubirFoto(it)
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,21 +30,15 @@ class TelaRF08DashboardUsuario : AppCompatActivity() {
 
         val textNomeUsuario = findViewById<TextView>(R.id.textNomeUsuario)
         imagePerfil         = findViewById(R.id.imagePerfilUsuario)
-        val uidAtual        = authRepository.getUsuarioAtual()?.uid
 
-        if (uidAtual != null) {
-            textNomeUsuario?.text = "Carregando..."
-            carregarDadosUsuario(uidAtual, textNomeUsuario)
-            carregarDescobrir(uidAtual)
-        } else {
-            startActivity(Intent(this, com.example.bibliounifornew.login.TelaRF03LoginAluno::class.java))
-            finish()
-            return
-        }
+        // PROTÓTIPO: Dados Mockados
+        textNomeUsuario?.text = "João da Silva"
+        imagePerfil.setImageResource(R.drawable.user_placeholder)
+        carregarLivrosDescobrirMock()
 
-        // ─── CLIQUE NA FOTO PARA TROCAR ────────────────────────────────────────
+        // ─── CLIQUE NA FOTO PARA TROCAR (PROTÓTIPO) ───────────────────────────
         imagePerfil.setOnClickListener {
-            getGalleryImage.launch("image/*")
+            Toast.makeText(this, "Funcionalidade de trocar foto disponível no sistema real", Toast.LENGTH_SHORT).show()
         }
 
         // ─── NAVEGAÇÃO ────────────────────────────────────────────────────────
@@ -92,150 +65,35 @@ class TelaRF08DashboardUsuario : AppCompatActivity() {
         NavigationHelper.configurarBarraNavegacao(this)
     }
 
-    override fun onResume() {
-        super.onResume()
-        val uidAtual = authRepository.getUsuarioAtual()?.uid
-        if (uidAtual != null) {
-            val textNomeUsuario = findViewById<TextView>(R.id.textNomeUsuario)
-            carregarDadosUsuario(uidAtual, textNomeUsuario)
-        }
-    }
-
-    private fun carregarDadosUsuario(uid: String, textView: TextView?) {
-        usuarioRepository.buscarPerfilUsuario(uid) { sucesso, dados, erro ->
-            if (sucesso && dados != null) {
-                textView?.text = dados["nome"] as? String ?: "Usuário"
-
-                // Carrega foto de perfil se disponível
-                val fotoUrl = dados["fotoUrl"] as? String ?: ""
-                if (fotoUrl.isNotEmpty()) {
-                    imagePerfil.load(fotoUrl) {
-                        placeholder(R.drawable.user_placeholder)
-                        error(R.drawable.user_placeholder)
-                        crossfade(true)
-                    }
-                }
-            } else {
-                textView?.text = "Erro ao carregar"
-            }
-        }
-    }
-
-    private fun processarESubirFoto(uri: Uri) {
-        val uid = authRepository.getUsuarioAtual()?.uid ?: return
-
-        try {
-            // 1. ATUALIZAÇÃO IMEDIATA NA UI (Feedback instantâneo)
-            val inputStream = contentResolver.openInputStream(uri)
-            val bitmap = BitmapFactory.decodeStream(inputStream)
-            inputStream?.close()
-
-            if (bitmap != null) {
-                imagePerfil.setImageBitmap(bitmap)
-                imagePerfil.alpha = 0.5f // Indicador visual de "em progresso"
-
-                // 2. Preparação dos bytes para upload
-                val redimensionado = Bitmap.createScaledBitmap(bitmap, 400, 400, true)
-                val baos = ByteArrayOutputStream()
-                redimensionado.compress(Bitmap.CompressFormat.JPEG, 80, baos)
-                val bytes = baos.toByteArray()
-
-                // 3. Upload em segundo plano
-                usuarioRepository.uploadFotoPerfil(uid, bytes) { sucesso, url, erro ->
-                    if (isFinishing || isDestroyed) return@uploadFotoPerfil
-                    imagePerfil.alpha = 1.0f
-                    if (sucesso && url != null) {
-                        imagePerfil.load(url) {
-                            placeholder(R.drawable.user_placeholder)
-                            error(R.drawable.user_placeholder)
-                            crossfade(true)
-                        }
-                        Toast.makeText(this, "Foto atualizada!", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(this, "Erro: $erro", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Toast.makeText(this, "Erro ao processar imagem.", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    // ─── SEÇÃO DESCOBRIR ──────────────────────────────────────────────────────
-
-    private fun carregarDescobrir(uid: String) {
-        db.collection("biblioteca_usuarios")
-            .whereEqualTo("usuarioId", uid)
-            .limit(20)
-            .get()
-            .addOnSuccessListener { snapshot ->
-                val livroIds = snapshot.documents.mapNotNull { it.getString("livroId") }.distinct()
-                if (livroIds.isEmpty()) {
-                    carregarLivrosDescobrir(null)
-                    return@addOnSuccessListener
-                }
-                db.collection("livros")
-                    .whereIn(FieldPath.documentId(), livroIds.take(10))
-                    .get()
-                    .addOnSuccessListener { livrosSnap ->
-                        val categoria = livrosSnap.documents
-                            .mapNotNull { it.getString("category") ?: it.getString("categoria") }
-                            .groupingBy { it }
-                            .eachCount()
-                            .maxByOrNull { it.value }
-                            ?.key
-                        carregarLivrosDescobrir(categoria)
-                    }
-                    .addOnFailureListener { carregarLivrosDescobrir(null) }
-            }
-            .addOnFailureListener { carregarLivrosDescobrir(null) }
-    }
-
-    private fun carregarLivrosDescobrir(categoria: String?) {
+    private fun carregarLivrosDescobrirMock() {
         val container = findViewById<LinearLayout>(R.id.containerDescobrir) ?: return
         container.removeAllViews()
 
-        val query = if (!categoria.isNullOrEmpty()) {
-            db.collection("livros").whereEqualTo("category", categoria).limit(10)
-        } else {
-            db.collection("livros").limit(10)
-        }
+        val livrosMock = listOf(
+            Triple("Código Limpo", "Robert C. Martin", R.drawable.osda),
+            Triple("Arquitetura Limpa", "Robert C. Martin", R.drawable.osda),
+            Triple("Design Patterns", "Erich Gamma", R.drawable.osda),
+            Triple("Kotlin em Ação", "Dmitry Jemerov", R.drawable.osda)
+        )
 
-        query.get()
-            .addOnSuccessListener { snapshot ->
-                if (snapshot.isEmpty) return@addOnSuccessListener
-                for (doc in snapshot.documents) {
-                    val titulo   = doc.getString("title")    ?: doc.getString("titulo")  ?: "Sem título"
-                    val autor    = doc.getString("author")   ?: doc.getString("autor")   ?: ""
-                    val coverUrl = doc.getString("coverUrl") ?: ""
-                    val livroId  = doc.id
+        for (livro in livrosMock) {
+            val cardView  = layoutInflater.inflate(R.layout.item_livro_descobrir, container, false)
+            val imgCapa   = cardView.findViewById<ImageView>(R.id.imgCapaDescobrir)
+            val txtTitulo = cardView.findViewById<TextView>(R.id.txtTituloDescobrir)
+            val txtAutor  = cardView.findViewById<TextView>(R.id.txtAutorDescobrir)
 
-                    val cardView  = layoutInflater.inflate(R.layout.item_livro_descobrir, container, false)
-                    val imgCapa   = cardView.findViewById<ImageView>(R.id.imgCapaDescobrir)
-                    val txtTitulo = cardView.findViewById<TextView>(R.id.txtTituloDescobrir)
-                    val txtAutor  = cardView.findViewById<TextView>(R.id.txtAutorDescobrir)
+            imgCapa.setImageResource(livro.third)
+            txtTitulo.text = livro.first
+            txtAutor.text  = livro.second
 
-                    if (coverUrl.isNotEmpty()) {
-                        imgCapa.load(coverUrl) {
-                            placeholder(R.drawable.osda)
-                            error(R.drawable.osda)
-                        }
-                    } else {
-                        imgCapa.setImageResource(R.drawable.osda)
-                    }
-                    txtTitulo.text = titulo
-                    txtAutor.text  = autor
-
-                    cardView.setOnClickListener {
-                        startActivity(
-                            Intent(this, TelaRF12TelaDoLivro::class.java)
-                                .putExtra("LIVRO_ID", livroId)
-                        )
-                    }
-                    container.addView(cardView)
-                }
+            cardView.setOnClickListener {
+                startActivity(
+                    Intent(this, TelaRF12TelaDoLivro::class.java)
+                        .putExtra("LIVRO_ID", "mock_id")
+                )
             }
-            .addOnFailureListener { }
+            container.addView(cardView)
+        }
     }
 
     private fun showExitPopup() {
@@ -247,7 +105,7 @@ class TelaRF08DashboardUsuario : AppCompatActivity() {
 
         dialogView.findViewById<MaterialButton>(R.id.btnConfirmarSair).setOnClickListener {
             dialog.dismiss()
-            com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
+            // Protótipo: Apenas volta para a tela inicial
             val intentSair = Intent(this, com.example.bibliounifornew.login.TelaRF01BemVindo::class.java)
             intentSair.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intentSair)

@@ -227,6 +227,20 @@
                 app:elevation="0dp" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSairSessao"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginBottom="16dp"
+                android:text="@string/btn_sair_conta"
+                android:textAllCaps="false"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                app:backgroundTint="@color/biblio_dark"
+                app:cornerRadius="16dp"
+                app:elevation="0dp" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnApagarConta"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"

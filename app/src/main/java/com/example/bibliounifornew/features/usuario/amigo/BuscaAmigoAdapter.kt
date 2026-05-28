@@ -10,8 +10,8 @@ import com.example.bibliounifornew.R
 
 /**
  * Adapter para a tela de Busca de Amigos (RF17_3).
- * Exibe usuários cadastrados no Firestore com botão "+" para enviar solicitação de amizade.
- * Toda lógica Firestore fica no callback [onEnviarSolicitacao] — adapter apenas faz binding.
+ * Exibe usuários simulados para o protótipo.
+ * Toda lógica de ação fica no callback [onEnviarSolicitacao] — adapter apenas faz binding.
  */
 class BuscaAmigoAdapter(
     private val lista: MutableList<UsuarioAmigo>,

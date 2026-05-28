@@ -4,8 +4,6 @@ import android.app.Dialog
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.View
 import android.view.Window
 import android.widget.Button
@@ -19,39 +17,30 @@ import coil.load
 import com.example.bibliounifornew.R
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
-import com.google.firebase.auth.EmailAuthProvider
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 
 class TelaRF37InfoLivroADM : AppCompatActivity() {
 
-    private val db   = FirebaseFirestore.getInstance()
-    private val auth = FirebaseAuth.getInstance()
     private var livroId: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.telarf37_info_livro_adm)
 
-        livroId = intent.getStringExtra("LIVRO_ID") ?: ""
+        livroId = intent.getStringExtra("LIVRO_ID") ?: "1"
 
-        if (livroId.isNotEmpty()) {
-            carregarDadosLivro()
-        } else {
-            Toast.makeText(this, getString(R.string.erro_id_livro_nao_fornecido), Toast.LENGTH_SHORT).show()
-        }
+        carregarDadosLivroMock()
 
         // Configurar cliques dos lápis para editar campos
-        configurarEdicao(R.id.btnEditTitulo,    R.id.editTituloLivro,   "title")
-        configurarEdicao(R.id.btnEditAutor,     R.id.editAutorLivro,    "author")
-        configurarEdicao(R.id.btnEditDescricao, R.id.editDescricaoLivro,"description")
-        configurarEdicao(R.id.btnEditLingua,    R.id.editLingua,        "language")
-        configurarEdicao(R.id.btnEditEditora,   R.id.editEditora,       "publisher")
-        configurarEdicao(R.id.btnEditDimensao,  R.id.editDimensao,      "dimensions")
-        configurarEdicao(R.id.btnEditISBN10,    R.id.editISBN10,        "isbn10")
-        configurarEdicao(R.id.btnEditISBN13,    R.id.editISBN13,        "isbn13")
-        configurarEdicao(R.id.btnEditData,      R.id.editData,          "publishedDate")
-        configurarEdicao(R.id.btnEditPaginas,   R.id.editPaginas,       "pageCount")
+        configurarEdicao(R.id.btnEditTitulo,    R.id.editTituloLivro)
+        configurarEdicao(R.id.btnEditAutor,     R.id.editAutorLivro)
+        configurarEdicao(R.id.btnEditDescricao, R.id.editDescricaoLivro)
+        configurarEdicao(R.id.btnEditLingua,    R.id.editLingua)
+        configurarEdicao(R.id.btnEditEditora,   R.id.editEditora)
+        configurarEdicao(R.id.btnEditDimensao,  R.id.editDimensao)
+        configurarEdicao(R.id.btnEditISBN10,    R.id.editISBN10)
+        configurarEdicao(R.id.btnEditISBN13,    R.id.editISBN13)
+        configurarEdicao(R.id.btnEditData,      R.id.editData)
+        configurarEdicao(R.id.btnEditPaginas,   R.id.editPaginas)
 
         // Controle de Exemplares
         findViewById<com.google.android.material.card.MaterialCardView>(R.id.btnDiminuirExemplares)
@@ -65,58 +54,28 @@ class TelaRF37InfoLivroADM : AppCompatActivity() {
         }
     }
 
-    // ─── CARREGAR DADOS ───────────────────────────────────────────────────────
+    // ─── CARREGAR DADOS MOCK ──────────────────────────────────────────────────
 
-    private fun carregarDadosLivro() {
-        db.collection("livros").document(livroId).get()
-            .addOnSuccessListener { doc ->
-                if (!doc.exists()) return@addOnSuccessListener
+    private fun carregarDadosLivroMock() {
+        // Dados fixos para o protótipo
+        findViewById<EditText>(R.id.editTituloLivro)?.setText("Código Limpo")
+        findViewById<EditText>(R.id.editAutorLivro)?.setText("Robert C. Martin")
+        findViewById<EditText>(R.id.editDescricaoLivro)?.setText("Mesmo um código ruim pode funcionar. Mas se ele não for limpo, pode acabar com uma empresa de desenvolvimento.")
+        findViewById<EditText>(R.id.editLingua)?.setText("Português")
+        findViewById<EditText>(R.id.editEditora)?.setText("Alta Books")
+        findViewById<EditText>(R.id.editDimensao)?.setText("23 x 16 x 2.8 cm")
+        findViewById<EditText>(R.id.editISBN10)?.setText("8576082675")
+        findViewById<EditText>(R.id.editISBN13)?.setText("978-8576082675")
+        findViewById<EditText>(R.id.editData)?.setText("2009")
+        findViewById<EditText>(R.id.editPaginas)?.setText("456")
+        findViewById<TextView>(R.id.textExemplaresTotal)?.text = "5"
 
-                findViewById<EditText>(R.id.editTituloLivro)?.setText(
-                    doc.getString("title")       ?: doc.getString("titulo")      ?: "")
-                findViewById<EditText>(R.id.editAutorLivro)?.setText(
-                    doc.getString("author")      ?: doc.getString("autor")       ?: "")
-                findViewById<EditText>(R.id.editDescricaoLivro)?.setText(
-                    doc.getString("description") ?: doc.getString("descricao")   ?: "")
-                findViewById<EditText>(R.id.editLingua)?.setText(
-                    doc.getString("language")    ?: "Português")
-                findViewById<EditText>(R.id.editEditora)?.setText(
-                    doc.getString("publisher")   ?: doc.getString("editora")     ?: "")
-                findViewById<EditText>(R.id.editDimensao)?.setText(
-                    doc.getString("dimensions")  ?: "")
-                findViewById<EditText>(R.id.editISBN10)?.setText(
-                    doc.getString("isbn10")      ?: "")
-                findViewById<EditText>(R.id.editISBN13)?.setText(
-                    doc.getString("isbn13")      ?: "")
-                findViewById<EditText>(R.id.editData)?.setText(
-                    doc.getString("publishedDate") ?: "")
-                findViewById<EditText>(R.id.editPaginas)?.setText(
-                    doc.getLong("pageCount")?.toString() ?: "0")
+        findViewById<ImageView>(R.id.imgCapaLivroDetalhe)?.setImageResource(R.drawable.osda)
 
-                // BUG-F2 FIX: lê campo "quantidade" (padrão do projeto) com fallback
-                val total = doc.getLong("quantidade")
-                    ?: doc.getLong("exemplares")
-                    ?: doc.getLong("totalExemplares")
-                    ?: 0L
-                findViewById<TextView>(R.id.textExemplaresTotal)?.text = total.toString()
-
-                // BUG-F5 FIX: usa ID direto em vez de getChildAt(0)
-                val coverUrl = doc.getString("coverUrl") ?: doc.getString("imagemUrl") ?: ""
-                findViewById<ImageView>(R.id.imgCapaLivroDetalhe)?.load(
-                    coverUrl.ifEmpty { null }
-                ) {
-                    placeholder(R.drawable.osda)
-                    error(R.drawable.osda)
-                    fallback(R.drawable.osda)
-                }
-
-                carregarAvaliacoes()
-            }
+        carregarAvaliacoesMock()
     }
 
-    // ─── AVALIAÇÕES ───────────────────────────────────────────────────────────
-
-    private fun carregarAvaliacoes() {
+    private fun carregarAvaliacoesMock() {
         val container = findViewById<LinearLayout>(R.id.containerAvaliacoes)
         val textSemAvaliacoes = findViewById<TextView>(R.id.textSemAvaliacoes)
 
@@ -131,7 +90,7 @@ class TelaRF37InfoLivroADM : AppCompatActivity() {
 
     // ─── EDIÇÃO DE CAMPOS ─────────────────────────────────────────────────────
 
-    private fun configurarEdicao(botaoId: Int, campoId: Int, firestoreField: String) {
+    private fun configurarEdicao(botaoId: Int, campoId: Int) {
         val botao = findViewById<ImageView>(botaoId)
         val campo = findViewById<EditText>(campoId)
 
@@ -139,20 +98,15 @@ class TelaRF37InfoLivroADM : AppCompatActivity() {
             if (campo?.isEnabled == false) {
                 campo.isEnabled = true
                 campo.requestFocus()
-                campo.setSelection(campo.text.length)
+                if (campo.text != null) {
+                    campo.setSelection(campo.text.length)
+                }
                 botao.setImageResource(android.R.drawable.ic_menu_save)
-                Toast.makeText(this, getString(R.string.msg_editando), Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Editando campo...", Toast.LENGTH_SHORT).show()
             } else {
-                val novoValor = campo?.text.toString()
-                db.collection("livros").document(livroId).update(firestoreField, novoValor)
-                    .addOnSuccessListener {
-                        campo?.isEnabled = false
-                        botao.setImageResource(R.drawable.ic_edit_pencil)
-                        Toast.makeText(this, getString(R.string.msg_campo_atualizado), Toast.LENGTH_SHORT).show()
-                    }
-                    .addOnFailureListener {
-                        Toast.makeText(this, getString(R.string.erro_conexao_banco), Toast.LENGTH_SHORT).show()
-                    }
+                campo?.isEnabled = false
+                botao.setImageResource(R.drawable.ic_edit_pencil)
+                Toast.makeText(this, "Campo atualizado com sucesso!", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -164,22 +118,12 @@ class TelaRF37InfoLivroADM : AppCompatActivity() {
         val atual   = tvTotal.text.toString().toIntOrNull() ?: 0
         val novo    = (atual + delta).coerceAtLeast(0)
 
-        // BUG-F2 FIX: salva em "quantidade" (campo padrão lido por TelaRF32LivrosCRUD)
-        db.collection("livros").document(livroId)
-            .update(mapOf("quantidade" to novo, "exemplares" to novo))
-            .addOnSuccessListener {
-                tvTotal.text = novo.toString()
-            }
-            .addOnFailureListener {
-                Toast.makeText(this, getString(R.string.erro_conexao_banco), Toast.LENGTH_SHORT).show()
-            }
+        tvTotal.text = novo.toString()
+        Toast.makeText(this, "Quantidade de exemplares atualizada", Toast.LENGTH_SHORT).show()
     }
 
     // ─── POPUP APAGAR ─────────────────────────────────────────────────────────
 
-    /**
-     * BUG-F3 FIX: valida senha via reauthenticate() antes de deletar o documento.
-     */
     private fun abrirPopupApagar() {
         val dialog = Dialog(this)
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -190,53 +134,13 @@ class TelaRF37InfoLivroADM : AppCompatActivity() {
             android.view.ViewGroup.LayoutParams.WRAP_CONTENT
         )
 
-        val inputSenha   = dialog.findViewById<TextInputEditText>(R.id.editSenhaAtual)
-        val textErro     = dialog.findViewById<TextView>(R.id.textErroSenha)
         val btnConfirmar = dialog.findViewById<MaterialButton>(R.id.btnConfirmarApagar)
         val btnCancelar  = dialog.findViewById<MaterialButton>(R.id.btnCancelarApagar)
 
-        textErro?.visibility = View.GONE
-
         btnConfirmar?.setOnClickListener {
-            val senha = inputSenha?.text.toString().trim()
-            if (senha.isEmpty()) {
-                textErro?.visibility = View.VISIBLE
-                textErro?.text = getString(R.string.popup_apagar_midia_erro_senha)
-                return@setOnClickListener
-            }
-
-            val user = auth.currentUser
-            if (user == null || user.email.isNullOrEmpty()) {
-                Toast.makeText(this, getString(R.string.erro_sessao_expirada), Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            btnConfirmar.isEnabled = false
-            textErro?.visibility = View.GONE
-
-            val credential = EmailAuthProvider.getCredential(user.email!!, senha)
-            user.reauthenticate(credential)
-                .addOnSuccessListener {
-                    db.collection("livros").document(livroId).delete()
-                        .addOnSuccessListener {
-                            Toast.makeText(
-                                this,
-                                getString(R.string.msg_midia_removida),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            dialog.dismiss()
-                            finish()
-                        }
-                        .addOnFailureListener {
-                            btnConfirmar.isEnabled = true
-                            Toast.makeText(this, getString(R.string.erro_conexao_banco), Toast.LENGTH_SHORT).show()
-                        }
-                }
-                .addOnFailureListener {
-                    btnConfirmar.isEnabled = true
-                    textErro?.visibility = View.VISIBLE
-                    textErro?.text = getString(R.string.erro_senha_incorreta)
-                }
+            Toast.makeText(this, "Mídia removida com sucesso!", Toast.LENGTH_SHORT).show()
+            dialog.dismiss()
+            finish()
         }
 
         btnCancelar?.setOnClickListener { dialog.dismiss() }

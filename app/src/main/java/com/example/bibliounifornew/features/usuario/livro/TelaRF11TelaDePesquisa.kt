@@ -31,14 +31,11 @@ class TelaRF11TelaDePesquisa : AppCompatActivity() {
         btnProcurar.setOnClickListener {
             val termoBusca = editPesquisa.text.toString().trim()
 
-            if (termoBusca.isNotEmpty()) {
-                // Passa o termo que o usuário digitou para a tela de resultados
-                val intent = Intent(this, TelaRF11_1_ResultadoPesquisa::class.java)
-                intent.putExtra("TERMO_PESQUISA", termoBusca)
-                startActivity(intent)
-            } else {
-                Toast.makeText(this, "Digite o nome de um livro ou autor", Toast.LENGTH_SHORT).show()
-            }
+            // Passa o termo que o usuário digitou para a tela de resultados
+            // Permitindo busca vazia para mostrar todos os livros no protótipo
+            val intent = Intent(this, TelaRF11_1_ResultadoPesquisa::class.java)
+            intent.putExtra("TERMO_PESQUISA", termoBusca)
+            startActivity(intent)
         }
 
         // Configurar Barra de Navegação

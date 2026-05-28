@@ -3,8 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.google.services)
-    alias(libs.plugins.ksp)
+    // Firebase and Google services plugins removed for prototype
 }
 
 android {
@@ -43,15 +42,6 @@ kotlin {
 }
 
 dependencies {
-    // Firebase BoM para alinhar as versões
-    implementation(platform(libs.firebase.bom))
-
-    // Firebase (versões gerenciadas pelo BoM)
-    implementation(libs.firebase.auth)
-    implementation(libs.firebase.firestore)
-    implementation(libs.firebase.messaging)
-    implementation("com.google.firebase:firebase-storage")
-
     // Android UI e Core
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.appcompat)
@@ -59,24 +49,8 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.material)
 
-    // Room Database
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler)
-
-    // Coroutines para Firebase (.await)
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
-
-    // Coil para carregamento de imagens por URL
+    // Coil para carregamento de imagens por URL (Mock images)
     implementation("io.coil-kt:coil:2.7.0")
-
-    implementation("com.google.android.gms:play-services-auth:21.2.0")
-
-    // Retrofit para chamadas de internet
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0") // Converte o resultado para objetos Kotlin
-
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     // Testes
     testImplementation(libs.junit)

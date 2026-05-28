@@ -231,7 +231,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:background="@android:color/transparent"
-                    android:hint="Sua senha é gerenciada pelo Firebase"
+                    android:hint="Sua senha é gerenciada localmente"
                     android:importantForAutofill="no"
                     android:inputType="textPassword"
                     android:paddingStart="20dp"

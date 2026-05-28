@@ -8,24 +8,16 @@ import android.text.InputType
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.ViewModelProvider
 import com.example.bibliounifornew.R
-import com.example.bibliounifornew.data.CadastroViewModel
 
 class TelaRF04CadastroNovoUsuario : AppCompatActivity() {
 
     private var senhaVisivel = false
     private var confirmarSenhaVisivel = false
 
-    // Instância do ViewModel
-    private lateinit var viewModel: CadastroViewModel
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.telarf04_cadastrar_novo_usuario)
-
-        // Inicializa o ViewModel
-        viewModel = ViewModelProvider(this)[CadastroViewModel::class.java]
 
         //-----------------------------------
         // COMPONENTES
@@ -156,30 +148,17 @@ class TelaRF04CadastroNovoUsuario : AppCompatActivity() {
             }
 
             //-----------------------------------
-            // INTEGRAÇÃO FIREBASE (CRIAR CONTA)
+            // PROTÓTIPO: SIMULAR SUCESSO NO CADASTRO
             //-----------------------------------
             btnCriar.isEnabled = false
-            btnCriar.text = "Criando..."
+            btnCriar.text = "Processando..."
 
-            viewModel.cadastrarUsuario(emailTexto, senhaTexto, nomeTexto, usuarioTexto) { sucesso, mensagem ->
-                runOnUiThread {
-                    btnCriar.isEnabled = true
-                    btnCriar.text = "Criar Conta"
-
-                    if (sucesso) {
-                        mostrarPopupSucesso()
-                    } else {
-                        val erroTraduzido = traduzirErroFirebase(mensagem)
-                        if (erroTraduzido.contains("e-mail já está cadastrado", ignoreCase = true)) {
-                            erroEmail.text = erroTraduzido
-                            erroEmail.visibility = View.VISIBLE
-                            email.requestFocus()
-                        } else {
-                            Toast.makeText(this@TelaRF04CadastroNovoUsuario, erroTraduzido, Toast.LENGTH_LONG).show()
-                        }
-                    }
-                }
-            }
+            // Simula um delay de rede para dar realismo ao protótipo
+            btnCriar.postDelayed({
+                btnCriar.isEnabled = true
+                btnCriar.text = "Criar Conta"
+                mostrarPopupSucesso()
+            }, 1000)
         }
     }
 
@@ -190,28 +169,13 @@ class TelaRF04CadastroNovoUsuario : AppCompatActivity() {
         dialog.setCancelable(false)
 
         val btnRetornar = dialog.findViewById<Button>(R.id.btnRetornarLogin)
-        btnRetornar.setOnClickListener {
+        btnRetornar?.setOnClickListener {
             dialog.dismiss()
             val intent = Intent(this, TelaRF03LoginAluno::class.java)
             startActivity(intent)
             finish()
         }
         dialog.show()
-    }
-
-    private fun traduzirErroFirebase(mensagem: String?): String {
-        return when {
-            mensagem == null                                        -> "Ocorreu um erro inesperado. Tente novamente."
-            mensagem.contains("email address is already")          -> "Este e-mail já está cadastrado."
-            mensagem.contains("badly formatted")                   -> "Formato de e-mail inválido."
-            mensagem.contains("network error", ignoreCase = true)
-                || mensagem.contains("unreachable")                -> "Sem conexão com a internet. Verifique sua rede."
-            mensagem.contains("password is invalid")
-                || mensagem.contains("least 6 characters")        -> "Senha muito fraca. Use pelo menos 8 caracteres."
-            mensagem.contains("too many requests", ignoreCase = true) -> "Muitas tentativas. Aguarde alguns minutos."
-            mensagem.contains("Conta criada, mas falha")           -> "Conta criada! Mas não foi possível salvar seu perfil. Tente fazer login."
-            else                                                   -> "Não foi possível criar a conta. Tente novamente."
-        }
     }
 
     private fun carregarLogoSegura(imageView: ImageView) {

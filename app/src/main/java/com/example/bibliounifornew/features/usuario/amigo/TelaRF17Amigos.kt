@@ -9,14 +9,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.bibliounifornew.R
-import com.example.bibliounifornew.data.AuthRepository
 import com.example.bibliounifornew.features.usuario.perfil.NavigationHelper
-import com.google.firebase.firestore.FirebaseFirestore
 
 class TelaRF17Amigos : AppCompatActivity() {
-
-    private val authRepository = AuthRepository()
-    private val db             = FirebaseFirestore.getInstance()
 
     // ─── AMIGOS CONFIRMADOS ────────────────────────────────────────────────────
     private lateinit var adapterAmigos  : AmigoAdapter
@@ -31,20 +26,11 @@ class TelaRF17Amigos : AppCompatActivity() {
     private var recyclerViewSolicitacoes: RecyclerView? = null
     private var dividerSolicitacoes     : View?         = null
 
-    private var uidAtual: String = ""
+    private var uidAtual: String = "mock_user_123"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.telarf17_amigos)
-
-        // ─── AUTENTICAÇÃO ─────────────────────────────────────────────────────
-        val usuarioAtual = authRepository.getUsuarioAtual()
-        if (usuarioAtual == null) {
-            startActivity(Intent(this, com.example.bibliounifornew.login.TelaRF03LoginAluno::class.java))
-            finish()
-            return
-        }
-        uidAtual = usuarioAtual.uid
 
         // ─── BOTÃO ADICIONAR AMIGOS ───────────────────────────────────────────
         findViewById<View>(R.id.layoutAdicionarAmigos)?.setOnClickListener {
@@ -68,75 +54,30 @@ class TelaRF17Amigos : AppCompatActivity() {
         // ─── ADAPTER DE AMIGOS ────────────────────────────────────────────────
         adapterAmigos = AmigoAdapter(listaAmigos)
         val recyclerViewAmigos = findViewById<RecyclerView>(R.id.recyclerViewAmigos)
-        recyclerViewAmigos.layoutManager = LinearLayoutManager(this)
-        recyclerViewAmigos.adapter = adapterAmigos
+        recyclerViewAmigos?.layoutManager = LinearLayoutManager(this)
+        recyclerViewAmigos?.adapter = adapterAmigos
 
         // ─── CARREGAMENTO DE DADOS ────────────────────────────────────────────
-        carregarAmigos()
-        carregarSolicitacoesRecebidas()
+        carregarAmigosMock()
+        carregarSolicitacoesRecebidasMock()
 
         // Configurar Barra de Navegação
         NavigationHelper.configurarBarraNavegacao(this)
     }
 
-    // ─── CARREGAMENTO ─────────────────────────────────────────────────────────
-
-    /**
-     * Carrega SOMENTE os amigos confirmados da subcoleção usuarios/{uid}/amigos.
-     * Exclui todos os outros usuários — diferente do comportamento anterior que listava todos.
-     */
-    private fun carregarAmigos() {
-        db.collection("usuarios").document(uidAtual).collection("amigos")
-            .get()
-            .addOnSuccessListener { result ->
-                listaAmigos.clear()
-                for (doc in result.documents) {
-                    listaAmigos.add(
-                        UsuarioAmigo(
-                            uid     = doc.getString("uid")     ?: doc.id,
-                            nome    = doc.getString("nome")    ?: "Amigo",
-                            usuario = doc.getString("usuario") ?: ""
-                        )
-                    )
-                }
-                adapterAmigos.notifyDataSetChanged()
-                if (listaAmigos.isEmpty()) {
-                    Toast.makeText(this, "Você ainda não tem amigos adicionados.", Toast.LENGTH_SHORT).show()
-                }
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Erro ao carregar amigos: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+    private fun carregarAmigosMock() {
+        listaAmigos.clear()
+        listaAmigos.add(UsuarioAmigo("1", "Maria Silva", "maria_silva"))
+        listaAmigos.add(UsuarioAmigo("2", "João Pereira", "joao_p"))
+        listaAmigos.add(UsuarioAmigo("3", "Ana Souza", "ana_souza"))
+        adapterAmigos.notifyDataSetChanged()
     }
 
-    /**
-     * Carrega solicitações de amizade pendentes onde o usuário atual é destinatário.
-     * Mostra a seção de solicitações somente se houver alguma pendente.
-     */
-    private fun carregarSolicitacoesRecebidas() {
-        db.collection("solicitacoes_amizade")
-            .whereEqualTo("uidDestinatario", uidAtual)
-            .whereEqualTo("status", "pendente")
-            .get()
-            .addOnSuccessListener { result ->
-                listaSolicitacoes.clear()
-                for (doc in result.documents) {
-                    listaSolicitacoes.add(
-                        SolicitacaoAmizade(
-                            docId             = doc.id,
-                            uidRemetente      = doc.getString("uidRemetente")  ?: "",
-                            nomeRemetente     = doc.getString("nomeRemetente") ?: "Usuário",
-                            status            = doc.getString("status")        ?: "pendente"
-                        )
-                    )
-                }
-                adapterSolicitacoes.notifyDataSetChanged()
-                atualizarVisibilidadeSolicitacoes()
-            }
-            .addOnFailureListener {
-                // Falha silenciosa — usuário pode não ter índice composto criado ainda
-                // Índice necessário: solicitacoes_amizade (uidDestinatario ASC, status ASC)
-            }
+    private fun carregarSolicitacoesRecebidasMock() {
+        listaSolicitacoes.clear()
+        listaSolicitacoes.add(SolicitacaoAmizade("s1", "4", "Carlos Eduardo", "pendente"))
+        adapterSolicitacoes.notifyDataSetChanged()
+        atualizarVisibilidadeSolicitacoes()
     }
 
     private fun atualizarVisibilidadeSolicitacoes() {
@@ -146,101 +87,27 @@ class TelaRF17Amigos : AppCompatActivity() {
         dividerSolicitacoes?.visibility      = visivel
     }
 
-    // ─── ACEITAR SOLICITAÇÃO ──────────────────────────────────────────────────
-
-    /**
-     * Aceitar solicitação de amizade:
-     * 1. Busca os dados dos dois perfis
-     * 2. Cria documentos mútuos em usuarios/{uid}/amigos usando Batch
-     * 3. Atualiza o status da solicitação para "aceito"
-     * 4. Atualiza RecyclerViews localmente
-     */
     private fun aceitarSolicitacao(solicitacao: SolicitacaoAmizade, position: Int) {
-        // Busca perfil do remetente para adicionar nos amigos do destinatário
-        db.collection("usuarios").document(solicitacao.uidRemetente).get()
-            .addOnSuccessListener { docRemetente ->
-                val nomeRemetente    = docRemetente.getString("nome")    ?: solicitacao.nomeRemetente
-                val usuarioRemetente = docRemetente.getString("usuario") ?: ""
+        adapterSolicitacoes.removerItem(position)
+        atualizarVisibilidadeSolicitacoes()
 
-                // Busca perfil do destinatário (eu) para adicionar nos amigos do remetente
-                db.collection("usuarios").document(uidAtual).get()
-                    .addOnSuccessListener { docAtual ->
-                        val nomeAtual    = docAtual.getString("nome")    ?: "Usuário"
-                        val usuarioAtual = docAtual.getString("usuario") ?: ""
+        listaAmigos.add(UsuarioAmigo(
+            uid     = solicitacao.uidRemetente,
+            nome    = solicitacao.nomeRemetente,
+            usuario = solicitacao.nomeRemetente.lowercase().replace(" ", "_")
+        ))
+        adapterAmigos.notifyDataSetChanged()
 
-                        val batch = db.batch()
-
-                        // Adiciona remetente na subcoleção de amigos do destinatário
-                        val amigoParaAtual = db.collection("usuarios").document(uidAtual)
-                            .collection("amigos").document(solicitacao.uidRemetente)
-                        batch.set(amigoParaAtual, mapOf(
-                            "uid"     to solicitacao.uidRemetente,
-                            "nome"    to nomeRemetente,
-                            "usuario" to usuarioRemetente
-                        ))
-
-                        // Adiciona destinatário na subcoleção de amigos do remetente
-                        val amigoParaRemetente = db.collection("usuarios").document(solicitacao.uidRemetente)
-                            .collection("amigos").document(uidAtual)
-                        batch.set(amigoParaRemetente, mapOf(
-                            "uid"     to uidAtual,
-                            "nome"    to nomeAtual,
-                            "usuario" to usuarioAtual
-                        ))
-
-                        // Marca solicitação como aceita
-                        val solicitacaoRef = db.collection("solicitacoes_amizade").document(solicitacao.docId)
-                        batch.update(solicitacaoRef, "status", "aceito")
-
-                        batch.commit()
-                            .addOnSuccessListener {
-                                // Remove da lista de solicitações
-                                adapterSolicitacoes.removerItem(position)
-                                atualizarVisibilidadeSolicitacoes()
-
-                                // Adiciona na lista de amigos
-                                listaAmigos.add(UsuarioAmigo(
-                                    uid     = solicitacao.uidRemetente,
-                                    nome    = nomeRemetente,
-                                    usuario = usuarioRemetente
-                                ))
-                                adapterAmigos.notifyDataSetChanged()
-
-                                Toast.makeText(
-                                    this,
-                                    "$nomeRemetente foi adicionado(a) como amigo(a)!",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                            .addOnFailureListener { e ->
-                                Toast.makeText(this, "Erro ao aceitar solicitação: ${e.message}", Toast.LENGTH_SHORT).show()
-                            }
-                    }
-                    .addOnFailureListener {
-                        Toast.makeText(this, "Erro ao buscar seu perfil.", Toast.LENGTH_SHORT).show()
-                    }
-            }
-            .addOnFailureListener {
-                Toast.makeText(this, "Erro ao buscar perfil do solicitante.", Toast.LENGTH_SHORT).show()
-            }
+        Toast.makeText(
+            this,
+            "${solicitacao.nomeRemetente} foi adicionado(a) como amigo(a)!",
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
-    // ─── RECUSAR SOLICITAÇÃO ──────────────────────────────────────────────────
-
-    /**
-     * Recusa a solicitação: atualiza o status para "recusado" no Firestore
-     * e remove o item localmente.
-     */
     private fun recusarSolicitacao(solicitacao: SolicitacaoAmizade, position: Int) {
-        db.collection("solicitacoes_amizade").document(solicitacao.docId)
-            .update("status", "recusado")
-            .addOnSuccessListener {
-                adapterSolicitacoes.removerItem(position)
-                atualizarVisibilidadeSolicitacoes()
-                Toast.makeText(this, "Solicitação recusada.", Toast.LENGTH_SHORT).show()
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Erro ao recusar solicitação: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+        adapterSolicitacoes.removerItem(position)
+        atualizarVisibilidadeSolicitacoes()
+        Toast.makeText(this, "Solicitação recusada.", Toast.LENGTH_SHORT).show()
     }
 }

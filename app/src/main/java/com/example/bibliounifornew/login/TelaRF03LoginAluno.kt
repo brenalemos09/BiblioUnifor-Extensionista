@@ -8,12 +8,9 @@ import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.example.bibliounifornew.R
-import com.example.bibliounifornew.data.AuthRepository
 import com.example.bibliounifornew.features.usuario.biblioteca.TelaRF08DashboardUsuario
 
 class TelaRF03LoginAluno : AppCompatActivity() {
-
-    private val authRepository = AuthRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,7 +30,7 @@ class TelaRF03LoginAluno : AppCompatActivity() {
         erro.visibility = View.GONE
 
         // ----------------------------------------------------
-        // CLIQUE: LOGIN EMAIL E SENHA
+        // CLIQUE: LOGIN EMAIL E SENHA (PROTÓTIPO)
         // ----------------------------------------------------
         botaoEntrar.setOnClickListener {
             val textoEmail = email.text.toString().trim()
@@ -47,25 +44,16 @@ class TelaRF03LoginAluno : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // UX: Desativa o botão enquanto carrega
-            botaoEntrar.isEnabled = false
-            botaoEntrar.text = "Entrando..."
-
-            // Login Real via Firebase
-            authRepository.loginUsuario(textoEmail, textoSenha) { sucesso, mensagemOuUid ->
-                botaoEntrar.isEnabled = true
-                botaoEntrar.text = "Entrar"
-
-                if (sucesso) {
-                    Toast.makeText(this, "Login realizado com sucesso!", Toast.LENGTH_SHORT).show()
-                    val intent = Intent(this, TelaRF08DashboardUsuario::class.java)
-                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    startActivity(intent)
-                    finish()
-                } else {
-                    erro.text = "E-mail ou senha incorretos"
-                    erro.visibility = View.VISIBLE
-                }
+            if (textoEmail == "usuario@bibliounifor.com" && textoSenha == "Usuario123") {
+                Toast.makeText(this, "Login realizado com sucesso!", Toast.LENGTH_SHORT).show()
+                val intent = Intent(this, TelaRF08DashboardUsuario::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                startActivity(intent)
+                finish()
+            } else {
+                Toast.makeText(this, "Credenciais inválidas", Toast.LENGTH_SHORT).show()
+                erro.text = "Credenciais inválidas"
+                erro.visibility = View.VISIBLE
             }
         }
 

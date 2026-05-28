@@ -93,7 +93,7 @@
 
     </LinearLayout>
 
-    <!-- RESULTADOS DINÂMICOS: usuários do Firestore (exceto self e já amigos) -->
+    <!-- RESULTADOS DINÂMICOS: usuários simulados (exceto self e já amigos) -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewBuscaAmigos"
         android:layout_width="0dp"

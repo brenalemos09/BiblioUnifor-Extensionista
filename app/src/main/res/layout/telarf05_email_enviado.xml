@@ -60,22 +60,38 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/textTituloEnviado" />
 
-    <!-- Botão -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/buttonVoltarLoginEnviado"
-        android:layout_width="0dp"
-        android:layout_height="55dp"
+    <!-- Botões -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:layout_marginHorizontal="32dp"
         android:layout_marginTop="50dp"
-        android:text="Voltar ao Login"
-        android:textAllCaps="false"
-        android:textColor="@color/white"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        app:backgroundTint="@color/biblio_blue"
-        app:cornerRadius="12dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/textMensagemEnviado" />
+        android:orientation="vertical"
+        app:layout_constraintTop_toBottomOf="@id/textMensagemEnviado">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonAbrirRedefinicao"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:text="Abrir Redefinição (Firebase Mock)"
+            android:textAllCaps="false"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:backgroundTint="@color/biblio_blue"
+            app:cornerRadius="12dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonVoltarLoginEnviado"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:layout_marginTop="8dp"
+            android:text="Voltar ao Login"
+            android:textColor="@color/biblio_blue"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

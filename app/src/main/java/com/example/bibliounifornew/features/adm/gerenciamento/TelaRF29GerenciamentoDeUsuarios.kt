@@ -10,11 +10,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.bibliounifornew.R
-import com.google.firebase.firestore.FirebaseFirestore
 
 class TelaRF29GerenciamentoDeUsuarios : AppCompatActivity() {
 
-    private val db             = FirebaseFirestore.getInstance()
     private lateinit var adapter: UsuariosAdmAdapter
     private val listaUsuarios  = mutableListOf<ItemUsuarioAdm>()
     private val listaCompleta  = mutableListOf<ItemUsuarioAdm>()
@@ -48,69 +46,20 @@ class TelaRF29GerenciamentoDeUsuarios : AppCompatActivity() {
         NavigationHelperADM.configurarBarraNavegacao(this)
     }
 
-    /**
-     * Recarrega a lista ao retornar de TelaRF30UsuariosParaADM.
-     * Garante que usuários removidos/alterados desapareçam sem precisar
-     * de startActivityForResult — o onResume é chamado automaticamente
-     * ao empilhar de volta após finish().
-     */
     override fun onResume() {
         super.onResume()
-        carregarUsuarios()
+        carregarUsuariosMock()
     }
 
-    /**
-     * Carrega todos os usuários com role != "adm" (alunos).
-     */
-    private fun carregarUsuarios() {
-        db.collection("usuarios")
-            .whereEqualTo("role", "aluno")
-            .get()
-            .addOnSuccessListener { result ->
-                listaCompleta.clear()
-                for (doc in result) {
-                    listaCompleta.add(
-                        ItemUsuarioAdm(
-                            uid     = doc.id,
-                            nome    = doc.getString("nome")    ?: "Usuário",
-                            email   = doc.getString("email")   ?: "",
-                            usuario = doc.getString("usuario") ?: ""
-                        )
-                    )
-                }
-                if (listaCompleta.isEmpty()) {
-                    // Fallback: carrega todos (caso o campo role não esteja preenchido)
-                    carregarTodosUsuarios()
-                } else {
-                    filtrarLista("")
-                }
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Erro ao carregar usuários: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-    }
-
-    private fun carregarTodosUsuarios() {
-        db.collection("usuarios").get()
-            .addOnSuccessListener { result ->
-                listaCompleta.clear()
-                for (doc in result) {
-                    val role = doc.getString("role") ?: ""
-                    if (role == "adm") continue // exclui administradores
-                    listaCompleta.add(
-                        ItemUsuarioAdm(
-                            uid     = doc.id,
-                            nome    = doc.getString("nome")    ?: "Usuário",
-                            email   = doc.getString("email")   ?: "",
-                            usuario = doc.getString("usuario") ?: ""
-                        )
-                    )
-                }
-                filtrarLista("")
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Erro ao carregar usuários: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+    private fun carregarUsuariosMock() {
+        listaCompleta.clear()
+        listaCompleta.add(ItemUsuarioAdm("1", "João Silva", "joao@email.com", "joaosilva"))
+        listaCompleta.add(ItemUsuarioAdm("2", "Maria Oliveira", "maria@email.com", "maria_oli"))
+        listaCompleta.add(ItemUsuarioAdm("3", "Carlos Souza", "carlos@email.com", "csouza"))
+        listaCompleta.add(ItemUsuarioAdm("4", "Ana Costa", "ana@email.com", "anacosta"))
+        listaCompleta.add(ItemUsuarioAdm("5", "Pedro Santos", "pedro@email.com", "psantos"))
+        
+        filtrarLista("")
     }
 
     private fun filtrarLista(query: String) {
@@ -125,3 +74,4 @@ class TelaRF29GerenciamentoDeUsuarios : AppCompatActivity() {
         adapter.notifyDataSetChanged()
     }
 }
+

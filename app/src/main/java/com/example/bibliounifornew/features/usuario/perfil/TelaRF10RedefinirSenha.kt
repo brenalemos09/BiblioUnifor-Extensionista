@@ -4,7 +4,6 @@ import android.app.Dialog
 import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
-import android.text.InputType
 import android.text.TextWatcher
 import android.text.method.HideReturnsTransformationMethod
 import android.text.method.PasswordTransformationMethod
@@ -13,19 +12,16 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.bibliounifornew.R
-import com.example.bibliounifornew.login.TelaRF03LoginAluno
 import com.google.android.material.button.MaterialButton
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
+import android.os.Handler
+import android.os.Looper
 
 class TelaRF10RedefinirSenha : AppCompatActivity() {
 
     private var novaSenhaVisivel = false
     private var confirmaSenhaVisivel = false
-    private val auth = FirebaseAuth.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -128,29 +124,12 @@ class TelaRF10RedefinirSenha : AppCompatActivity() {
                     btnSalvar.isEnabled = false
                     btnSalvar.text = "Salvando..."
                     
-                    val user = auth.currentUser
-                    user?.updatePassword(novaSenha)
-                        ?.addOnCompleteListener { task ->
-                            btnSalvar.isEnabled = true
-                            btnSalvar.text = "Salvar Alterações"
-                            
-                            if (task.isSuccessful) {
-                                // SUCESSO - MOSTRAR POPUP
-                                exibirPopupSucesso()
-                            } else {
-                                val exception = task.exception
-                                if (exception is FirebaseAuthRecentLoginRequiredException) {
-                                    Toast.makeText(this, "Por segurança, faça login novamente para alterar a senha.", Toast.LENGTH_LONG).show()
-                                    auth.signOut()
-                                    val intent = Intent(this@TelaRF10RedefinirSenha, TelaRF03LoginAluno::class.java)
-                                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                                    startActivity(intent)
-                                    finish()
-                                } else {
-                                    Toast.makeText(this, "Erro ao atualizar senha: ${exception?.message}", Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        }
+                    // Simulação Mock
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        btnSalvar.isEnabled = true
+                        btnSalvar.text = "Salvar Alterações"
+                        exibirPopupSucesso()
+                    }, 1000)
                 }
             }
         }

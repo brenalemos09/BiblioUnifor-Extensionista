@@ -13,19 +13,9 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.bibliounifornew.R
-import com.example.bibliounifornew.data.Solicitacao
-import com.example.bibliounifornew.data.SolicitacaoRepository
 import com.example.bibliounifornew.features.usuario.livro.TelaRF12TelaDoLivro
-import com.example.bibliounifornew.data.UsuarioRepository
-import com.google.firebase.auth.FirebaseAuth
 
 class TelaRF19SolicitacoesTermosCondicoes : AppCompatActivity() {
-
-    // ─── DEPENDÊNCIAS ────────────────────────────────────────────────────────
-    // SolicitacaoRepository encapsula toda a lógica de persistência.
-    private val solicitacaoRepository = SolicitacaoRepository()
-    private val usuarioRepository     = UsuarioRepository()
-    private val auth                  = FirebaseAuth.getInstance()
 
     private var tituloLivro: String = ""
     private var autorLivro: String = ""
@@ -67,81 +57,15 @@ class TelaRF19SolicitacoesTermosCondicoes : AppCompatActivity() {
             btnConfirmar.alpha     = if (isChecked) 1.0f else 0.5f
         }
 
-        // ─── CONFIRMAR → PERSISTE NO FIRESTORE ───────────────────────────────
+        // ─── CONFIRMAR → PERSISTE NO FIRESTORE (MOCKADO) ────────────────────
         btnConfirmar.setOnClickListener {
-            gravarSolicitacao(tipoMidia, livroId)
-        }
-    }
-
-    // ─── PERSISTÊNCIA VIA REPOSITORY ─────────────────────────────────────────
-
-    /**
-     * Constrói o objeto [Solicitacao] e delega a gravação ao
-     * [SolicitacaoRepository]. Apenas após o sucesso confirmado pelo Firestore
-     * o popup de sucesso é exibido — nenhum feedback falso é mostrado.
-     *
-     * @param tipoMidia "PDF" | "Braille" | "Audiobook" | "Reserva"
-     * @param livroId   ID do documento na coleção "livros"
-     */
-    private fun gravarSolicitacao(tipoMidia: String, livroId: String) {
-        val uid = auth.currentUser?.uid
-        if (uid.isNullOrEmpty()) {
-            Toast.makeText(this, "Faça login para solicitar.", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val solicitacao = Solicitacao(
-            uidUsuario      = uid,
-            uidAluno        = uid,        // alias de compatibilidade com RF31 (ADM)
-            idLivro         = livroId,
-            tipos           = tipoMidia,
-            status          = "pendente",
-            dataSolicitacao = System.currentTimeMillis()
-        )
-
-        // Desabilita o botão durante o request para evitar duplo envio
-        val btnConfirmar = findViewById<Button>(R.id.buttonConfirmarTermosTela)
-        btnConfirmar?.isEnabled = false
-
-        solicitacaoRepository.gravarSolicitacao(solicitacao) { sucesso, _, erro ->
-            if (isFinishing || isDestroyed) return@gravarSolicitacao
-
-            if (sucesso) {
-                // RF15.8: Registra no histórico a solicitação
-                val acao = when(tipoMidia) {
-                    "Reserva" -> "Reserva Solicitada"
-                    else -> "$tipoMidia Solicitado"
-                }
-                usuarioRepository.registrarNoHistorico(uid, livroId, tituloLivro, autorLivro, acao)
-
-                showPopupSucesso(livroId)
-            } else {
-                btnConfirmar?.isEnabled = true
-                Toast.makeText(
-                    this,
-                    "Erro ao registrar solicitação: $erro",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
+            showPopupSucesso(tipoMidia, livroId)
         }
     }
 
     // ─── POPUP DE SUCESSO ─────────────────────────────────────────────────────
 
-    /**
-     * Exibe o popup de confirmação. Ao clicar em OK, retorna à tela do livro
-     * (RF12) usando FLAG_ACTIVITY_CLEAR_TOP + LIVRO_ID, preservando a pilha de
-     * navegação sem criar uma instância nova sem ID.
-     *
-     * ┌── Back stack após solicitação ──────────────────────────────┐
-     * │  RF12 (TelaRF12TelaDoLivro / TelaLivroActivity)             │
-     * │    ← RF19 (TelaRF19Solicitacoes)         [destruída]        │
-     * │       ← RF19Terms (esta Activity)        [destruída]        │
-     * └─────────────────────────────────────────────────────────────┘
-     * FLAG_ACTIVITY_CLEAR_TOP remove RF19 e RF19Terms e reutiliza RF12.
-     * O LIVRO_ID é passado para garantir que o onCreate/onNewIntent tenha dados.
-     */
-    private fun showPopupSucesso(livroId: String) {
+    private fun showPopupSucesso(tipoMidia: String, livroId: String) {
         val dialog = Dialog(this)
         dialog.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE)
         dialog.setContentView(R.layout.telarf19_solicitacoes_voltar_biblioteca)
@@ -149,6 +73,19 @@ class TelaRF19SolicitacoesTermosCondicoes : AppCompatActivity() {
             android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT)
         )
         dialog.setCancelable(false)
+
+        val txtMensagem = dialog.findViewById<TextView>(R.id.textPopupSolicitacao)
+        
+        val mensagem = when(tipoMidia) {
+            "PDF"       -> "Solicitação de PDF enviada com sucesso"
+            "Braille"   -> "Solicitação Braille enviada com sucesso"
+            "Audiobook" -> "Solicitação de Audiobook enviada com sucesso"
+            "Reserva"   -> "Livro reservado com sucesso"
+            "Aluguel"   -> "Livro alugado com sucesso"
+            else        -> "Operação realizada com sucesso"
+        }
+        
+        txtMensagem?.text = mensagem
 
         dialog.findViewById<Button>(R.id.buttonPopupOkSolicitacao)
             ?.setOnClickListener {
@@ -159,11 +96,6 @@ class TelaRF19SolicitacoesTermosCondicoes : AppCompatActivity() {
         dialog.show()
     }
 
-    /**
-     * Navegação correta de retorno à tela do livro.
-     * Passa o LIVRO_ID explicitamente para que a Activity de destino
-     * possa re-popular a UI mesmo que seja recriada pelo CLEAR_TOP.
-     */
     private fun voltarParaLivro(livroId: String) {
         val intent = Intent(this, TelaRF12TelaDoLivro::class.java)
             .putExtra("LIVRO_ID", livroId)

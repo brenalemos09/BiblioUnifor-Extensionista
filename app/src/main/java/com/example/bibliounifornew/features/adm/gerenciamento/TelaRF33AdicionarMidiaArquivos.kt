@@ -10,11 +10,11 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.bibliounifornew.R
 import com.example.bibliounifornew.features.adm.dashboard.TelaRF28DashboardADM
 import com.google.android.material.button.MaterialButton
-import com.google.firebase.firestore.FirebaseFirestore
+import android.os.Handler
+import android.os.Looper
 
 class TelaRF33AdicionarMidiaArquivos : AppCompatActivity() {
 
-    private val db = FirebaseFirestore.getInstance()
     private var livroId: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,29 +41,11 @@ class TelaRF33AdicionarMidiaArquivos : AppCompatActivity() {
 
             btnSalvar.isEnabled = false
 
-            // ── Salva arquivos no documento do livro (BUG-C1 FIX) ────────────
-            val atualizacoes = hashMapOf<String, Any>(
-                "linkPdf"       to pdf,
-                "linkAudiobook" to audiobook,
-                "braille"       to braille
-            )
-
-            if (livroId.isNotEmpty()) {
-                db.collection("livros").document(livroId)
-                    .update(atualizacoes)
-                    .addOnSuccessListener {
-                        btnSalvar.isEnabled = true
-                        exibirPopupSucesso()
-                    }
-                    .addOnFailureListener {
-                        btnSalvar.isEnabled = true
-                        Toast.makeText(this, getString(R.string.erro_conexao_banco), Toast.LENGTH_SHORT).show()
-                    }
-            } else {
-                // Edge case: sem ID — exibe sucesso sem tentar salvar arquivos
+            // ── Simulação Mock de salvamento ────────────
+            Handler(Looper.getMainLooper()).postDelayed({
                 btnSalvar.isEnabled = true
                 exibirPopupSucesso()
-            }
+            }, 800)
         }
     }
 

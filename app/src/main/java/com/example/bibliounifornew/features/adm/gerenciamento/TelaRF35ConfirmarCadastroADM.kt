@@ -15,12 +15,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.bibliounifornew.R
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
+import android.os.Handler
+import android.os.Looper
 
 class TelaRF35ConfirmarCadastroADM : AppCompatActivity() {
 
-    private val db                  = FirebaseFirestore.getInstance()
     private lateinit var adapter    : ConfirmacaoAdapter
     private val listaPendentes      = mutableListOf<ItemUsuarioPendente>()
     private val listaCompleta       = mutableListOf<ItemUsuarioPendente>()
@@ -47,30 +46,19 @@ class TelaRF35ConfirmarCadastroADM : AppCompatActivity() {
             override fun afterTextChanged(s: Editable?) {}
         })
 
-        carregarPendentes()
+        carregarPendentesMock()
         NavigationHelperADM.configurarBarraNavegacao(this)
     }
 
     /**
-     * Carrega usuários com cadastroConfirmado == false do Firestore.
+     * Carrega usuários mockados.
      */
-    private fun carregarPendentes() {
-        db.collection("usuarios")
-            .whereEqualTo("cadastroConfirmado", false)
-            .get()
-            .addOnSuccessListener { result ->
-                listaCompleta.clear()
-                for (doc in result) {
-                    val uid   = doc.id
-                    val nome  = doc.getString("nome")  ?: "Usuário"
-                    val email = doc.getString("email") ?: ""
-                    listaCompleta.add(ItemUsuarioPendente(uid, nome, email))
-                }
-                filtrarLista("")
-            }
-            .addOnFailureListener {
-                Toast.makeText(this, getString(R.string.erro_carregar_pendentes), Toast.LENGTH_SHORT).show()
-            }
+    private fun carregarPendentesMock() {
+        listaCompleta.clear()
+        listaCompleta.add(ItemUsuarioPendente("1", "Carlos Andrade", "carlos@email.com"))
+        listaCompleta.add(ItemUsuarioPendente("2", "Fernanda Lima", "fernanda@email.com"))
+        listaCompleta.add(ItemUsuarioPendente("3", "João Silva", "joao@email.com"))
+        filtrarLista("")
     }
 
     private fun filtrarLista(query: String) {
@@ -84,7 +72,7 @@ class TelaRF35ConfirmarCadastroADM : AppCompatActivity() {
     }
 
     /**
-     * Popup de confirmação de cadastro — confirma no Firestore e remove da lista.
+     * Popup de confirmação de cadastro — Simulado.
      */
     private fun exibirPopupConfirmacao(item: ItemUsuarioPendente, position: Int) {
         val dialog = Dialog(this)
@@ -97,19 +85,12 @@ class TelaRF35ConfirmarCadastroADM : AppCompatActivity() {
 
         btnConfirmar?.setOnClickListener {
             btnConfirmar.isEnabled = false
-            // Atualiza cadastroConfirmado no Firestore
-            db.collection("usuarios").document(item.uid)
-                .set(mapOf("cadastroConfirmado" to true), SetOptions.merge())
-                .addOnSuccessListener {
-                    dialog.dismiss()
-                    Toast.makeText(this, getString(R.string.fmt_cadastro_confirmado, item.nome), Toast.LENGTH_SHORT).show()
-                    listaCompleta.removeAll { it.uid == item.uid }
-                    adapter.removerItem(position)
-                }
-                .addOnFailureListener {
-                    btnConfirmar.isEnabled = true
-                    Toast.makeText(this, getString(R.string.erro_confirmar_cadastro), Toast.LENGTH_SHORT).show()
-                }
+            Handler(Looper.getMainLooper()).postDelayed({
+                dialog.dismiss()
+                Toast.makeText(this, getString(R.string.fmt_cadastro_confirmado, item.nome), Toast.LENGTH_SHORT).show()
+                listaCompleta.removeAll { it.uid == item.uid }
+                adapter.removerItem(position)
+            }, 500)
         }
 
         btnVoltar?.setOnClickListener { dialog.dismiss() }

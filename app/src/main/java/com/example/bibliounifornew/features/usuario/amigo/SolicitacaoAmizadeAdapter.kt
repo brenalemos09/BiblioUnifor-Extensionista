@@ -20,7 +20,7 @@ data class SolicitacaoAmizade(
 /**
  * Adapter para a lista de solicitações de amizade recebidas.
  * Exibe nome do remetente + botões "Aceitar" / "Recusar".
- * Toda lógica Firestore fica nos callbacks — adapter apenas faz binding.
+ * Toda lógica de ação fica nos callbacks — adapter apenas faz binding.
  */
 class SolicitacaoAmizadeAdapter(
     private val lista    : MutableList<SolicitacaoAmizade>,

@@ -5,6 +5,8 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,21 +20,17 @@ import com.example.bibliounifornew.R
 import com.example.bibliounifornew.features.adm.gerenciamento.NavigationHelperADM
 import com.example.bibliounifornew.features.adm.gerenciamento.TelaRF37InfoLivroADM
 import com.google.android.material.button.MaterialButton
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 class TelaRF34FinanceiroADM : AppCompatActivity() {
 
-    private val db = FirebaseFirestore.getInstance()
     private lateinit var recyclerView: RecyclerView
     private val listaVencidos = mutableListOf<LivroVencidoModel>()
     private lateinit var adapter: VencidosAdapter
 
     companion object {
-        /** R$ 2,00 por dia de atraso — calculado dinamicamente (BUG-A3 FIX) */
         const val MULTA_POR_DIA = 2L
     }
 
@@ -45,7 +43,6 @@ class TelaRF34FinanceiroADM : AppCompatActivity() {
         recyclerView         = findViewById(R.id.recyclerViewLivrosVencidos)
 
         recyclerView.layoutManager = LinearLayoutManager(this)
-        // BUG-A1 FIX: adapter usa item_livro_vencido.xml (Design System Premium)
         adapter = VencidosAdapter(listaVencidos) { modelo, acao ->
             when (acao) {
                 "ABRIR_LIVRO"  -> {
@@ -53,124 +50,69 @@ class TelaRF34FinanceiroADM : AppCompatActivity() {
                     intent.putExtra("LIVRO_ID", modelo.idLivro)
                     startActivity(intent)
                 }
-                "RENOVAR"      -> renovarAluguel(modelo.docIdAtual)
+                "RENOVAR"      -> renovarAluguelMock(modelo)
                 "VER_DETALHES" -> exibirPopupPendentes(modelo)
             }
         }
         recyclerView.adapter = adapter
 
-        carregarVencidos(txtNenhumVencido)
+        carregarVencidosMock(txtNenhumVencido)
 
         btnVerPendentes?.setOnClickListener {
             if (listaVencidos.isNotEmpty()) {
                 exibirPopupPendentes(listaVencidos[0])
             } else {
-                Toast.makeText(this, getString(R.string.msg_lista_vencidos_vazia), Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Nenhuma pendência encontrada", Toast.LENGTH_SHORT).show()
             }
         }
 
         NavigationHelperADM.configurarBarraNavegacao(this)
     }
 
-    // ─── CARREGAR VENCIDOS ────────────────────────────────────────────────────
-
-    private fun carregarVencidos(txtNenhumVencido: TextView) {
+    private fun carregarVencidosMock(txtNenhumVencido: TextView?) {
+        listaVencidos.clear()
+        
         val agora = System.currentTimeMillis()
+        val umDiaMs = 24 * 60 * 60 * 1000L
+        
+        listaVencidos.add(LivroVencidoModel(
+            docIdAtual = "venc1",
+            uidAlunoAtual = "u1",
+            idLivro = "l1",
+            dataDevolucaoMs = agora - (3 * umDiaMs),
+            diasVencidos = 3,
+            multa = 6,
+            nomeUsuario = "Alice Smith",
+            tituloLivro = "O Senhor dos Anéis"
+        ))
 
-        db.collection("solicitacoes_emprestimo")
-            .whereLessThan("dataDevolucao", agora)
-            .whereEqualTo("status", "ativo")
-            .limit(50)
-            .get()
-            .addOnSuccessListener { result ->
-                if (result.isEmpty) {
-                    txtNenhumVencido.visibility = View.VISIBLE
-                    return@addOnSuccessListener
-                }
+        listaVencidos.add(LivroVencidoModel(
+            docIdAtual = "venc2",
+            uidAlunoAtual = "u2",
+            idLivro = "l2",
+            dataDevolucaoMs = agora - (5 * umDiaMs),
+            diasVencidos = 5,
+            multa = 10,
+            nomeUsuario = "Bob Brown",
+            tituloLivro = "Cálculo Volume 1"
+        ))
 
-                txtNenhumVencido.visibility = View.GONE
-                val docs = result.documents
-
-                // BUG-A2 FIX: contador atômico — notifyDataSetChanged() disparado UMA VEZ
-                val totalJoins = docs.size * 2
-                var processados = 0
-
-                fun verificarConcluido() {
-                    processados++
-                    if (processados >= totalJoins) {
-                        adapter.notifyDataSetChanged()
-                    }
-                }
-
-                for (doc in docs) {
-                    val docId    = doc.id
-                    val uidAluno = doc.getString("uidAluno") ?: ""
-                    val idLivro  = doc.getString("idLivro")  ?: ""
-                    val dataDev  = doc.getLong("dataDevolucao") ?: agora
-
-                    // BUG-A3 FIX: cálculo dinâmico (R$ 2,00/dia) — não lê campo "multa" do Firestore
-                    val diasVencidos   = ((agora - dataDev) / (1_000L * 60 * 60 * 24)).coerceAtLeast(0)
-                    val multaCalculada = diasVencidos * MULTA_POR_DIA
-
-                    val modelo = LivroVencidoModel(
-                        docIdAtual      = docId,
-                        uidAlunoAtual   = uidAluno,
-                        idLivro         = idLivro,
-                        dataDevolucaoMs = dataDev,
-                        diasVencidos    = diasVencidos,
-                        multa           = multaCalculada
-                    )
-                    listaVencidos.add(modelo)
-
-                    // Join: nome do usuário
-                    if (uidAluno.isNotEmpty()) {
-                        db.collection("usuarios").document(uidAluno).get()
-                            .addOnSuccessListener { u ->
-                                modelo.nomeUsuario = u.getString("nome") ?: getString(R.string.usuario_desconhecido)
-                                verificarConcluido()
-                            }
-                            .addOnFailureListener { verificarConcluido() }
-                    } else verificarConcluido()
-
-                    // Join: título do livro
-                    if (idLivro.isNotEmpty()) {
-                        db.collection("livros").document(idLivro).get()
-                            .addOnSuccessListener { l ->
-                                modelo.tituloLivro = l.getString("title") ?: l.getString("titulo")
-                                    ?: getString(R.string.sem_titulo)
-                                verificarConcluido()
-                            }
-                            .addOnFailureListener { verificarConcluido() }
-                    } else verificarConcluido()
-                }
-            }
-            .addOnFailureListener {
-                Toast.makeText(this, getString(R.string.erro_carregar_vencidos), Toast.LENGTH_SHORT).show()
-                txtNenhumVencido.visibility = View.VISIBLE
-            }
+        if (listaVencidos.isEmpty()) {
+            txtNenhumVencido?.visibility = View.VISIBLE
+        } else {
+            txtNenhumVencido?.visibility = View.GONE
+            adapter.notifyDataSetChanged()
+        }
     }
 
-    // ─── RENOVAR ALUGUEL ──────────────────────────────────────────────────────
-
-    private fun renovarAluguel(docId: String) {
-        val novaDevolucao = System.currentTimeMillis() + (14L * 24 * 60 * 60 * 1_000)
-
-        db.collection("solicitacoes_emprestimo").document(docId)
-            .set(
-                mapOf("dataDevolucao" to novaDevolucao, "status" to "ativo", "multa" to 0L),
-                SetOptions.merge()
-            )
-            .addOnSuccessListener {
-                Toast.makeText(this, getString(R.string.msg_aluguel_renovado), Toast.LENGTH_SHORT).show()
-                listaVencidos.removeAll { it.docIdAtual == docId }
-                adapter.notifyDataSetChanged()
-            }
-            .addOnFailureListener {
-                Toast.makeText(this, getString(R.string.erro_renovar_aluguel), Toast.LENGTH_SHORT).show()
-            }
+    private fun renovarAluguelMock(modelo: LivroVencidoModel) {
+        Handler(Looper.getMainLooper()).postDelayed({
+            Toast.makeText(this, "Aluguel renovado com sucesso!", Toast.LENGTH_SHORT).show()
+            listaVencidos.remove(modelo)
+            adapter.notifyDataSetChanged()
+            findViewById<TextView>(R.id.txtNenhumVencido)?.visibility = if (listaVencidos.isEmpty()) View.VISIBLE else View.GONE
+        }, 500)
     }
-
-    // ─── POPUP PENDENTES ─────────────────────────────────────────────────────
 
     private fun exibirPopupPendentes(modelo: LivroVencidoModel) {
         val dialog = Dialog(this)
@@ -178,87 +120,42 @@ class TelaRF34FinanceiroADM : AppCompatActivity() {
         dialog.setContentView(R.layout.popup_pendentes_retirada)
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
-        // BUG-A4 FIX: popula textInfoPendencia com dados reais do modelo
         val sdf            = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
         val prazoFormatado = sdf.format(Date(modelo.dataDevolucaoMs))
         val multaFormatada = String.format("%.2f", modelo.multa.toDouble()).replace('.', ',')
-        dialog.findViewById<TextView>(R.id.textInfoPendencia)?.text =
-            getString(
-                R.string.fmt_info_pendencia,
-                modelo.tituloLivro,
-                modelo.nomeUsuario,
-                prazoFormatado,
-                modelo.diasVencidos,
-                multaFormatada
-            )
+        
+        // Tentando preencher os campos do popup
+        dialog.findViewById<TextView>(R.id.textInfoPendencia)?.text = 
+            "Livro: ${modelo.tituloLivro}\nUsuário: ${modelo.nomeUsuario}\nPrazo: $prazoFormatado\nAtraso: ${modelo.diasVencidos} dias\nMulta: R$ $multaFormatada"
 
         val btnNotificarAtraso  = dialog.findViewById<MaterialButton>(R.id.btnNotificarAtraso)
         val btnNotificarValor   = dialog.findViewById<MaterialButton>(R.id.btnNotificarValor)
         val btnConfirmarAluguel = dialog.findViewById<MaterialButton>(R.id.btnConfirmacaoAluguel)
         val btnRemoverRegistro  = dialog.findViewById<MaterialButton>(R.id.btnRemoverRegistro)
 
-        // BUG-A5 FIX: mensagens via getString() — zero hardcode
         btnNotificarAtraso?.setOnClickListener {
-            val notif = hashMapOf(
-                "uidAluno"   to modelo.uidAlunoAtual,
-                "docAluguel" to modelo.docIdAtual,
-                "tipo"       to "atraso",
-                "mensagem"   to getString(R.string.notif_atraso_mensagem),
-                "criadoEm"   to System.currentTimeMillis()
-            )
-            db.collection("notificacoes").add(notif)
-                .addOnSuccessListener {
-                    Toast.makeText(this, getString(R.string.msg_aviso_atraso_enviado), Toast.LENGTH_SHORT).show()
-                }
-                .addOnFailureListener {
-                    Toast.makeText(this, getString(R.string.erro_conexao_banco), Toast.LENGTH_SHORT).show()
-                }
+            Toast.makeText(this, "Aviso de atraso enviado ao usuário!", Toast.LENGTH_SHORT).show()
             dialog.dismiss()
         }
 
         btnNotificarValor?.setOnClickListener {
-            val notif = hashMapOf(
-                "uidAluno"   to modelo.uidAlunoAtual,
-                "docAluguel" to modelo.docIdAtual,
-                "tipo"       to "multa",
-                "mensagem"   to getString(R.string.notif_multa_mensagem),
-                "criadoEm"   to System.currentTimeMillis()
-            )
-            db.collection("notificacoes").add(notif)
-                .addOnSuccessListener {
-                    Toast.makeText(this, getString(R.string.msg_multa_notificada), Toast.LENGTH_SHORT).show()
-                }
-                .addOnFailureListener {
-                    Toast.makeText(this, getString(R.string.erro_conexao_banco), Toast.LENGTH_SHORT).show()
-                }
+            Toast.makeText(this, "Notificação de multa enviada!", Toast.LENGTH_SHORT).show()
             dialog.dismiss()
         }
 
         btnConfirmarAluguel?.setOnClickListener {
-            db.collection("solicitacoes_emprestimo").document(modelo.docIdAtual)
-                .set(mapOf("status" to "confirmado"), SetOptions.merge())
-                .addOnSuccessListener {
-                    Toast.makeText(this, getString(R.string.msg_aluguel_confirmado), Toast.LENGTH_SHORT).show()
-                    listaVencidos.remove(modelo)
-                    adapter.notifyDataSetChanged()
-                }
-                .addOnFailureListener {
-                    Toast.makeText(this, getString(R.string.erro_conexao_banco), Toast.LENGTH_SHORT).show()
-                }
+            Toast.makeText(this, "Aluguel confirmado com sucesso!", Toast.LENGTH_SHORT).show()
+            listaVencidos.remove(modelo)
+            adapter.notifyDataSetChanged()
+            findViewById<TextView>(R.id.txtNenhumVencido)?.visibility = if (listaVencidos.isEmpty()) View.VISIBLE else View.GONE
             dialog.dismiss()
         }
 
         btnRemoverRegistro?.setOnClickListener {
-            db.collection("solicitacoes_emprestimo").document(modelo.docIdAtual)
-                .delete()
-                .addOnSuccessListener {
-                    Toast.makeText(this, getString(R.string.msg_registro_removido), Toast.LENGTH_SHORT).show()
-                    listaVencidos.remove(modelo)
-                    adapter.notifyDataSetChanged()
-                }
-                .addOnFailureListener {
-                    Toast.makeText(this, getString(R.string.erro_conexao_banco), Toast.LENGTH_SHORT).show()
-                }
+            Toast.makeText(this, "Registro removido localmente.", Toast.LENGTH_SHORT).show()
+            listaVencidos.remove(modelo)
+            adapter.notifyDataSetChanged()
+            findViewById<TextView>(R.id.txtNenhumVencido)?.visibility = if (listaVencidos.isEmpty()) View.VISIBLE else View.GONE
             dialog.dismiss()
         }
 
@@ -270,25 +167,16 @@ class TelaRF34FinanceiroADM : AppCompatActivity() {
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MODELO
-// ─────────────────────────────────────────────────────────────────────────────
-
 data class LivroVencidoModel(
     val docIdAtual       : String,
     val uidAlunoAtual    : String,
     val idLivro          : String,
     val dataDevolucaoMs  : Long,
     val diasVencidos     : Long,
-    /** Calculado dinamicamente — R$ 2,00/dia (nunca lido do Firestore) */
     val multa            : Long,
-    var nomeUsuario      : String = "Carregando…",
-    var tituloLivro      : String = "Carregando…"
+    var nomeUsuario      : String = "Usuário",
+    var tituloLivro      : String = "Livro"
 )
-
-// ─────────────────────────────────────────────────────────────────────────────
-// ADAPTER — BUG-A1 FIX: item_livro_vencido.xml com Design System Premium
-// ─────────────────────────────────────────────────────────────────────────────
 
 class VencidosAdapter(
     private val lista   : List<LivroVencidoModel>,
@@ -311,15 +199,10 @@ class VencidosAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = lista[position]
-        val ctx  = holder.itemView.context
-
         holder.txtTitulo.text  = item.tituloLivro
-        holder.txtUsuario.text = ctx.getString(R.string.fmt_usuario_vencido, item.nomeUsuario)
-        holder.txtDias.text    = ctx.getString(R.string.fmt_item_atraso, item.diasVencidos)
-        holder.txtMulta.text   = ctx.getString(
-            R.string.fmt_item_multa,
-            String.format("%.2f", item.multa.toDouble()).replace('.', ',')
-        )
+        holder.txtUsuario.text = "Usuário: ${item.nomeUsuario}"
+        holder.txtDias.text    = "Atraso: ${item.diasVencidos} dias"
+        holder.txtMulta.text   = "Multa: R$ ${String.format("%.2f", item.multa.toDouble()).replace('.', ',')}"
 
         holder.itemView.setOnClickListener { onClick(item, "VER_DETALHES") }
         holder.btnRenovar.setOnClickListener { onClick(item, "RENOVAR") }

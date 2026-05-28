@@ -18,11 +18,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.bibliounifornew.R
-import com.google.firebase.firestore.FirebaseFirestore
 
 class TelaRF32LivrosCRUD : AppCompatActivity() {
 
-    private val db             = FirebaseFirestore.getInstance()
     private lateinit var adapter: LivrosCrudAdapter
     private val listaLivros    = mutableListOf<ItemLivroAdm>()
     private val listaCompleta  = mutableListOf<ItemLivroAdm>()
@@ -76,40 +74,28 @@ class TelaRF32LivrosCRUD : AppCompatActivity() {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // CARREGAMENTO FIRESTORE
+    // CARREGAMENTO MOCK (PROTÓTIPO)
     // ─────────────────────────────────────────────────────────────────────────
     private fun carregarLivros() {
         val txtVazio = findViewById<TextView>(R.id.txtAcervoVazio)
 
-        db.collection("livros")
-            .get()
-            .addOnSuccessListener { result ->
-                listaCompleta.clear()
-                for (doc in result) {
-                    listaCompleta.add(
-                        ItemLivroAdm(
-                            docId      = doc.id,
-                            titulo     = doc.getString("title")     ?: doc.getString("titulo")     ?: "Título Indisponível",
-                            autor      = doc.getString("author")    ?: doc.getString("autor")      ?: "Autor Desconhecido",
-                            isbn       = doc.getString("isbn")      ?: doc.getString("codigo_isbn") ?: "",
-                            quantidade = doc.getLong("quantidade")  ?: doc.getLong("exemplares")   ?: 0L,
-                            coverUrl   = doc.getString("coverUrl")  ?: doc.getString("imagemUrl")  ?: ""
-                        )
-                    )
-                }
+        // Dados estáticos para o protótipo acadêmico
+        listaCompleta.clear()
+        listaCompleta.addAll(listOf(
+            ItemLivroAdm("1", "Código Limpo", "Robert C. Martin", "8576082675", 5, ""),
+            ItemLivroAdm("2", "Arquitetura Limpa", "Robert C. Martin", "8550804606", 3, ""),
+            ItemLivroAdm("3", "Kotlin em Ação", "Dmitry Jemerov", "8575225693", 2, ""),
+            ItemLivroAdm("4", "Design Patterns", "Erich Gamma", "8573076100", 4, ""),
+            ItemLivroAdm("5", "Estruturas de Dados", "Thomas H. Cormen", "8535236996", 1, "")
+        ))
 
-                if (listaCompleta.isEmpty()) {
-                    txtVazio?.visibility = View.VISIBLE
-                    adapter.atualizarLista(emptyList())
-                } else {
-                    txtVazio?.visibility = View.GONE
-                    adapter.atualizarLista(listaCompleta)
-                }
-            }
-            .addOnFailureListener {
-                Toast.makeText(this, getString(R.string.erro_conexao_banco), Toast.LENGTH_SHORT).show()
-                txtVazio?.visibility = View.VISIBLE
-            }
+        if (listaCompleta.isEmpty()) {
+            txtVazio?.visibility = View.VISIBLE
+            adapter.atualizarLista(emptyList())
+        } else {
+            txtVazio?.visibility = View.GONE
+            adapter.atualizarLista(listaCompleta)
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────

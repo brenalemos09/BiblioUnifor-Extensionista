@@ -16,14 +16,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.bibliounifornew.R
 import com.google.android.material.button.MaterialButton
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthInvalidUserException
-import com.google.firebase.firestore.FirebaseFirestore
 
 class TelaRF05RecuperacaoSenha : AppCompatActivity() {
-
-    private val auth = FirebaseAuth.getInstance()
-    private val db   = FirebaseFirestore.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,7 +49,7 @@ class TelaRF05RecuperacaoSenha : AppCompatActivity() {
             if (hasFocus) txtErro.visibility = View.GONE
         }
 
-        // ─── ENVIAR LINK DE RECUPERAÇÃO VIA FIREBASE ──────────────────────────
+        // ─── ENVIAR LINK DE RECUPERAÇÃO (PROTÓTIPO) ──────────────────────────
         btnEnviar.setOnClickListener {
             val email = editEmail.text.toString().trim()
 
@@ -77,25 +71,12 @@ class TelaRF05RecuperacaoSenha : AppCompatActivity() {
             btnEnviar.isEnabled = false
             txtErro.visibility  = View.GONE
 
-            // 3) Validação extra: Verifica se o e-mail existe no Firestore (Coleção Usuários)
-            db.collection("usuarios")
-                .whereEqualTo("email", email)
-                .get()
-                .addOnSuccessListener { querySnapshot ->
-                    if (querySnapshot.isEmpty) {
-                        btnEnviar.isEnabled = true
-                        txtErro.text = "E-mail não cadastrado"
-                        txtErro.visibility = View.VISIBLE
-                    } else {
-                        // 4) Chamada Oficial Firebase: Envia link de redefinição
-                        enviarLinkFirebase(email, btnEnviar, txtErro)
-                    }
-                }
-                .addOnFailureListener {
-                    btnEnviar.isEnabled = true
-                    txtErro.text = "Erro ao validar e-mail. Tente novamente."
-                    txtErro.visibility = View.VISIBLE
-                }
+            // Protótipo: Simula sucesso e vai para a tela de confirmação
+            btnEnviar.postDelayed({
+                val intent = Intent(this, TelaRF05EmailEnviado::class.java)
+                startActivity(intent)
+                finish()
+            }, 1000)
         }
 
         // ─── VOLTAR PARA LOGIN ────────────────────────────────────────────────
@@ -104,32 +85,6 @@ class TelaRF05RecuperacaoSenha : AppCompatActivity() {
             startActivity(Intent(this, TelaRF03LoginAluno::class.java))
             finish()
         }
-    }
-
-    private fun enviarLinkFirebase(email: String, btnEnviar: MaterialButton, txtErro: TextView) {
-        auth.sendPasswordResetEmail(email)
-            .addOnCompleteListener { task ->
-                btnEnviar.isEnabled = true
-
-                if (task.isSuccessful) {
-                    // Navega para a tela de sucesso (Email Enviado)
-                    startActivity(
-                        Intent(
-                            this,
-                            TelaRF05EmailEnviado::class.java
-                        )
-                    )
-                    finish()
-                } else {
-                    val exception = task.exception
-                    val mensagemErro = when (exception) {
-                        is FirebaseAuthInvalidUserException -> "Este e-mail não está cadastrado no sistema."
-                        else -> "Erro ao enviar recuperação"
-                    }
-                    txtErro.text = mensagemErro
-                    txtErro.visibility = View.VISIBLE
-                }
-            }
     }
 
     private fun fecharTeclado() {

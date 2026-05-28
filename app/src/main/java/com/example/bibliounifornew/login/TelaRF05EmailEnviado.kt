@@ -18,12 +18,17 @@ class TelaRF05EmailEnviado : AppCompatActivity() {
         carregarLogoSegura(imageLogo)
 
         val btnVoltar = findViewById<MaterialButton>(R.id.buttonVoltarLoginEnviado)
+        val btnAbrirRedefinicao = findViewById<MaterialButton>(R.id.buttonAbrirRedefinicao)
 
         btnVoltar.setOnClickListener {
             val intent = Intent(this, TelaRF03LoginAluno::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)
             finish()
+        }
+
+        btnAbrirRedefinicao.setOnClickListener {
+            startActivity(Intent(this, TelaRF05RedefinirSenhaFake::class.java))
         }
     }
 

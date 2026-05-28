@@ -10,12 +10,9 @@ import com.example.bibliounifornew.R
 import com.example.bibliounifornew.features.adm.gerenciamento.NavigationHelperADM
 import com.example.bibliounifornew.features.adm.gerenciamento.TelaRF30UsuariosParaADM
 import com.example.bibliounifornew.features.adm.gerenciamento.TelaRF37InfoLivroADM
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
 
 class TelaRF36ListaAlugueisADM : AppCompatActivity() {
 
-    private val db            = FirebaseFirestore.getInstance()
     private lateinit var adapter: AlugueisAdapter
     private val listaAlugueis = mutableListOf<ItemAluguel>()
 
@@ -41,109 +38,24 @@ class TelaRF36ListaAlugueisADM : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
 
-        carregarAlugueis()
+        carregarAlugueisMock()
 
         NavigationHelperADM.configurarBarraNavegacao(this)
     }
 
     /**
-     * Carrega solicitacoes_emprestimo (status != "devolvido"), depois enriquece
-     * com nome do usuário via join em usuarios/{uidAluno} e título via livros/{idLivro}.
+     * Carrega aluguéis mockados para o protótipo.
      */
+    private fun carregarAlugueisMock() {
+        val mockData = listOf(
+            ItemAluguel("1", "u1", "l1", System.currentTimeMillis() - 86400000 * 2, "ativo", "João Silva", "O Hobbit", "J.R.R. Tolkien"),
+            ItemAluguel("2", "u2", "l2", System.currentTimeMillis() - 86400000 * 5, "atrasado", "Maria Oliveira", "1984", "George Orwell"),
+            ItemAluguel("3", "u3", "l3", System.currentTimeMillis() - 86400000 * 1, "pendente", "Carlos Santos", "Dom Casmurro", "Machado de Assis")
+        )
+        adapter.atualizarLista(mockData)
+    }
+
     private fun carregarAlugueis() {
-        // Tenta buscar na coleção solicitacoes_emprestimo
-        // Se falhar, tentamos carregar sem o orderBy para evitar erro de índice ausente
-        db.collection("solicitacoes_emprestimo")
-            .whereIn("status", listOf("pendente", "ativo", "atrasado"))
-            .get()
-            .addOnSuccessListener { result ->
-                if (result.isEmpty) {
-                    // Se estiver vazio, talvez a coleção seja 'alugueis'? 
-                    // Vamos tentar uma segunda busca preventiva
-                    buscarNaColecaoAlternativa()
-                    return@addOnSuccessListener
-                }
-                processarDocumentos(result.documents)
-            }
-            .addOnFailureListener { e ->
-                android.util.Log.e("FirestoreError", "Erro ao carregar alugueis: ${e.message}")
-                Toast.makeText(this, getString(R.string.erro_carregar_alugueis), Toast.LENGTH_SHORT).show()
-                buscarNaColecaoAlternativa()
-            }
-    }
-
-    private fun buscarNaColecaoAlternativa() {
-        db.collection("alugueis")
-            .get()
-            .addOnSuccessListener { result ->
-                if (!result.isEmpty) {
-                    processarDocumentos(result.documents)
-                } else {
-                    Toast.makeText(this, getString(R.string.msg_nenhum_aluguel_colecao), Toast.LENGTH_SHORT).show()
-                }
-            }
-    }
-
-    private fun processarDocumentos(documentos: List<com.google.firebase.firestore.DocumentSnapshot>) {
-        val totalDocs = documentos.size
-        var processados = 0
-        val listaTemp = mutableListOf<ItemAluguel>()
-
-        for (doc in documentos) {
-            val docId = doc.id
-            val uidAluno = doc.getString("uidAluno") ?: doc.getString("usuarioId") ?: ""
-            val idLivro = doc.getString("idLivro") ?: doc.getString("livroId") ?: ""
-            val status = doc.getString("status") ?: "ativo"
-            val dataMs = doc.getLong("dataSolicitacao") ?: doc.getLong("dataMs") ?: 0L
-
-            val itemBase = ItemAluguel(
-                docId = docId,
-                uidAluno = uidAluno,
-                idLivro = idLivro,
-                dataMs = dataMs,
-                status = status
-            )
-            listaTemp.add(itemBase)
-
-            var nomeUsuario = "Usuário"
-            var tituloLivro = "Título..."
-            var autorLivro = "Autor..."
-            var joinsRestantes = 2
-
-            fun verificarConclusao() {
-                joinsRestantes--
-                if (joinsRestantes == 0) {
-                    val idx = listaTemp.indexOfFirst { it.docId == docId }
-                    if (idx >= 0) {
-                        listaTemp[idx] = listaTemp[idx].copy(
-                            nomeUsuario = nomeUsuario,
-                            tituloLivro = tituloLivro,
-                            autorLivro = autorLivro
-                        )
-                    }
-                    processados++
-                    if (processados == totalDocs) {
-                        adapter.atualizarLista(listaTemp.sortedByDescending { it.dataMs })
-                    }
-                }
-            }
-
-            if (uidAluno.isNotEmpty()) {
-                db.collection("usuarios").document(uidAluno).get()
-                    .addOnSuccessListener { u ->
-                        nomeUsuario = u.getString("nome") ?: u.getString("email") ?: "Usuário"
-                        verificarConclusao()
-                    }.addOnFailureListener { verificarConclusao() }
-            } else { verificarConclusao() }
-
-            if (idLivro.isNotEmpty()) {
-                db.collection("livros").document(idLivro).get()
-                    .addOnSuccessListener { l ->
-                        tituloLivro = l.getString("title") ?: l.getString("titulo") ?: "Título"
-                        autorLivro = l.getString("author") ?: l.getString("autor") ?: "Autor"
-                        verificarConclusao()
-                    }.addOnFailureListener { verificarConclusao() }
-            } else { verificarConclusao() }
-        }
+        carregarAlugueisMock()
     }
 }

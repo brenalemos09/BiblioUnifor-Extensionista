@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:targetSandboxVersion="1">
 
     <!-- Rede -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -15,6 +16,7 @@
     <queries>
         <package android:name="com.spotify.music" />
         <package android:name="com.google.android.apps.docs" />
+        <package android:name="com.google.android.gms" />
 
         <intent>
             <action android:name="android.intent.action.VIEW" />
@@ -45,23 +47,8 @@
             android:name="android.app.default_searchable"
             android:value=".features.usuario.livro.TelaRF11TelaDePesquisa" />
 
-        <service
-            android:name=".services.MeuFirebaseMessagingService"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
 
-        <activity
-            android:name=".login.TelaRF25RedefinirSenhaADM"
-            android:exported="false" />
-        <activity
-            android:name=".login.TelaRF06ValidacaoCodigo"
-            android:exported="false" />
-        <activity
-            android:name=".login.TelaRF07RedefinirSenha"
-            android:exported="false" />
+
         <activity
             android:name=".login.TelaRF26NovaContaADM"
             android:exported="false" />
@@ -175,6 +162,9 @@
             android:exported="false" />
         <activity
             android:name=".login.TelaRF05EmailEnviado"
+            android:exported="false" />
+        <activity
+            android:name=".login.TelaRF05RedefinirSenhaFake"
             android:exported="false" />
         <activity
             android:name=".login.TelaRF24EmailEnviadoADM"

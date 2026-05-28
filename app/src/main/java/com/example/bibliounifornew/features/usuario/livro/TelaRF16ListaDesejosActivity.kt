@@ -15,24 +15,13 @@ import android.graphics.drawable.ColorDrawable
 import android.graphics.Color
 import coil.load
 import com.example.bibliounifornew.R
-import com.example.bibliounifornew.data.AuthRepository
-import com.example.bibliounifornew.data.UsuarioRepository
-import com.example.bibliounifornew.features.usuario.biblioteca.TelaRF15MinhaLivrariaActivity
 import com.example.bibliounifornew.features.usuario.perfil.NavigationHelper
-import com.example.bibliounifornew.features.usuario.solicitacao.TelaRF18StatusAluguel
-import com.google.android.material.button.MaterialButton
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
 
 class TelaRF16ListaDesejosActivity : AppCompatActivity() {
 
-    private val authRepository    = AuthRepository()
-    private val usuarioRepository = UsuarioRepository()
-    private val db                = FirebaseFirestore.getInstance()
-
     private lateinit var adapter  : ListaDesejosAdapter
     private val listaDesejos      = mutableListOf<ItemListaDesejos>()
-    private var usuarioId         : String = ""
+    private var usuarioId         : String = "mock_user_123"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,134 +47,57 @@ class TelaRF16ListaDesejosActivity : AppCompatActivity() {
         // ─── CABEÇALHO ────────────────────────────────────────────────────────
         val textNome    = findViewById<TextView>(R.id.textNomeUsuarioDesejos)
         val imagePerfil = findViewById<ImageView?>(R.id.imageUsuarioDesejos)
-        val usuarioAtual = authRepository.getUsuarioAtual()
+        
+        // Mock User Profile
+        textNome?.text = "João Silva"
+        imagePerfil?.setImageResource(R.drawable.user_placeholder)
 
-        if (usuarioAtual != null) {
-            usuarioId = usuarioAtual.uid
-            textNome?.text = "Carregando..."
-
-            usuarioRepository.buscarPerfilUsuario(usuarioId) { sucesso, dados, _ ->
-                if (sucesso && dados != null) {
-                    textNome?.text = dados["nome"] as? String ?: "Usuário"
-                    val fotoUrl = dados["fotoUrl"] as? String ?: ""
-                    if (fotoUrl.isNotEmpty()) {
-                        imagePerfil?.load(fotoUrl) {
-                            placeholder(R.drawable.user_placeholder)
-                            error(R.drawable.user_placeholder)
-                        }
-                    }
-                } else {
-                    textNome?.text = "Usuário"
-                }
-            }
-
-            carregarListaDesejos()
-        } else {
-            startActivity(Intent(this, com.example.bibliounifornew.login.TelaRF03LoginAluno::class.java))
-            finish()
-            return
-        }
+        carregarListaDesejos()
 
         NavigationHelper.configurarBarraNavegacao(this)
     }
 
-    // ─── CARREGAR DO FIRESTORE ────────────────────────────────────────────────
+    // ─── CARREGAR MOCK DATA ──────────────────────────────────────────────────
 
     private fun carregarListaDesejos() {
-        db.collection("lista_desejos")
-            .whereEqualTo("usuarioId", usuarioId)
-            .get()
-            .addOnSuccessListener { result ->
-                if (result.isEmpty) {
-                    adapter.atualizarLista(emptyList())
-                    return@addOnSuccessListener
-                }
-
-                val total       = result.size()
-                var processados = 0
-                val listaTemp   = mutableListOf<ItemListaDesejos>()
-
-                for (doc in result) {
-                    val livroId = doc.getString("livroId") ?: ""
-                    val titulo  = doc.getString("titulo")  ?: ""
-                    val autor   = doc.getString("autor")   ?: ""
-                    val docId   = doc.id
-
-                    if (livroId.isEmpty()) {
-                        processados++
-                        if (processados == total) adapter.atualizarLista(listaTemp)
-                        continue
-                    }
-
-                    // Join com coleção livros para pegar capa e estoque
-                    db.collection("livros").document(livroId).get()
-                        .addOnSuccessListener { livroDoc ->
-                            val coverUrl  = livroDoc.getString("coverUrl") ?: ""
-                            val estoque   = livroDoc.getLong("estoque")
-                                ?: livroDoc.getLong("quantidade")
-                                ?: livroDoc.getLong("stock")
-                                ?: 0L
-                            val tituloFinal = titulo.ifEmpty {
-                                livroDoc.getString("title") ?: livroDoc.getString("titulo") ?: livroId
-                            }
-                            val autorFinal = autor.ifEmpty {
-                                livroDoc.getString("author") ?: livroDoc.getString("autor") ?: ""
-                            }
-                            listaTemp.add(
-                                ItemListaDesejos(
-                                    docId      = docId,
-                                    livroId    = livroId,
-                                    titulo     = tituloFinal,
-                                    autor      = autorFinal,
-                                    coverUrl   = coverUrl,
-                                    disponivel = estoque > 0L
-                                )
-                            )
-                            processados++
-                            if (processados == total) adapter.atualizarLista(listaTemp)
-                        }
-                        .addOnFailureListener {
-                            listaTemp.add(
-                                ItemListaDesejos(docId = docId, livroId = livroId, titulo = titulo, autor = autor)
-                            )
-                            processados++
-                            if (processados == total) adapter.atualizarLista(listaTemp)
-                        }
-                }
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Erro ao carregar lista de desejos: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+        val mockData = listOf(
+            ItemListaDesejos(
+                docId = "1",
+                livroId = "9788535914061",
+                titulo = "1984",
+                autor = "George Orwell",
+                coverUrl = "https://m.media-amazon.com/images/I/91SZS6B7-CL.jpg",
+                disponivel = true
+            ),
+            ItemListaDesejos(
+                docId = "2",
+                livroId = "9788533302273",
+                titulo = "O Pequeno Príncipe",
+                autor = "Antoine de Saint-Exupéry",
+                coverUrl = "https://m.media-amazon.com/images/I/8179u87mZ+L.jpg",
+                disponivel = false
+            ),
+            ItemListaDesejos(
+                docId = "3",
+                livroId = "9788535914849",
+                titulo = "A Revolução dos Bichos",
+                autor = "George Orwell",
+                coverUrl = "https://m.media-amazon.com/images/I/91BsAdSBFML.jpg",
+                disponivel = true
+            )
+        )
+        adapter.atualizarLista(mockData)
     }
 
     // ─── AÇÕES ────────────────────────────────────────────────────────────────
 
     private fun adicionarNaLivraria(item: ItemListaDesejos) {
-        val dados = hashMapOf(
-            "usuarioId"     to usuarioId,
-            "livroId"       to item.livroId,
-            "titulo"        to item.titulo,
-            "autor"         to item.autor,
-            "statusLeitura" to "Não Lido",
-            "adicionadoEm"  to System.currentTimeMillis()
-        )
-        db.collection("biblioteca_usuarios").document("${usuarioId}_${item.livroId}")
-            .set(dados, SetOptions.merge())
-            .addOnSuccessListener {
-                Toast.makeText(this, "\"${item.titulo}\" adicionado à sua Livraria!", Toast.LENGTH_SHORT).show()
-            }
-            .addOnFailureListener {
-                Toast.makeText(this, "Erro ao adicionar à Livraria.", Toast.LENGTH_SHORT).show()
-            }
+        Toast.makeText(this, "\"${item.titulo}\" adicionado à sua Livraria!", Toast.LENGTH_SHORT).show()
     }
 
     private fun excluirDaLista(item: ItemListaDesejos, position: Int) {
-        usuarioRepository.removerDaListaDesejos(usuarioId, item.livroId) { sucesso ->
-            adapter.removerItem(position)
-            val msg = if (sucesso) "\"${item.titulo}\" removido da lista de desejos."
-                      else "Removido localmente (falha no servidor)."
-            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
-        }
+        adapter.removerItem(position)
+        Toast.makeText(this, "\"${item.titulo}\" removido da lista de desejos.", Toast.LENGTH_SHORT).show()
     }
 
     // ─── POPUPS ───────────────────────────────────────────────────────────────
@@ -213,7 +125,7 @@ class TelaRF16ListaDesejosActivity : AppCompatActivity() {
 
         btnAlugar?.setOnClickListener {
             dialog.dismiss()
-            gravarSolicitacaoAluguel(item)
+            showPopupLivroAdicionado()
         }
         
         btnCancelar?.setOnClickListener { 
@@ -221,26 +133,6 @@ class TelaRF16ListaDesejosActivity : AppCompatActivity() {
         }
         
         dialog.show()
-    }
-
-    private fun gravarSolicitacaoAluguel(item: ItemListaDesejos) {
-        if (usuarioId.isEmpty()) return
-
-        val dados = hashMapOf(
-            "uidAluno"        to usuarioId,
-            "idLivro"         to item.livroId,
-            "status"          to "pendente",
-            "dataSolicitacao" to System.currentTimeMillis()
-        )
-
-        db.collection("solicitacoes_emprestimo")
-            .add(dados)
-            .addOnSuccessListener {
-                if (!isFinishing && !isDestroyed) showPopupLivroAdicionado()
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Erro ao solicitar: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
     }
 
     private fun showPopupLivroAdicionado() {

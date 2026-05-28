@@ -39,19 +39,19 @@ object NavigationHelperADM {
             }
         }
 
-        // btnUsuarios -> TelaRF31Solicitacoes
+        // btnUsuarios -> TelaRF29GerenciamentoDeUsuarios (Gestão de Usuários)
         btnUsuarios?.setOnClickListener {
-            if (activity !is TelaRF31Solicitacoes) {
-                val intent = Intent(activity, TelaRF31Solicitacoes::class.java)
+            if (activity !is TelaRF29GerenciamentoDeUsuarios) {
+                val intent = Intent(activity, TelaRF29GerenciamentoDeUsuarios::class.java)
                 intent.addFlags(intentFlags)
                 activity.startActivity(intent)
             }
         }
 
-        // btnSuporte -> TelaRF29GerenciamentoDeUsuarios
+        // btnSuporte -> TelaRF31Solicitacoes (Solicitações de Mídia)
         btnSuporte?.setOnClickListener {
-            if (activity !is TelaRF29GerenciamentoDeUsuarios) {
-                val intent = Intent(activity, TelaRF29GerenciamentoDeUsuarios::class.java)
+            if (activity !is TelaRF31Solicitacoes) {
+                val intent = Intent(activity, TelaRF31Solicitacoes::class.java)
                 intent.addFlags(intentFlags)
                 activity.startActivity(intent)
             }
@@ -90,8 +90,8 @@ object NavigationHelperADM {
         when (activity) {
             is TelaRF28DashboardADM -> btnHome?.setColorFilter(corAtiva)
             is TelaRF34FinanceiroADM -> btnFinanceiro?.setColorFilter(corAtiva)
-            is TelaRF31Solicitacoes -> btnUsuarios?.setColorFilter(corAtiva)
-            is TelaRF29GerenciamentoDeUsuarios -> btnSuporte?.setColorFilter(corAtiva)
+            is TelaRF29GerenciamentoDeUsuarios -> btnUsuarios?.setColorFilter(corAtiva)
+            is TelaRF31Solicitacoes -> btnSuporte?.setColorFilter(corAtiva)
             is TelaRF32LivrosCRUD -> btnLivros?.setColorFilter(corAtiva)
 
             // Telas que pertencem ao grupo Home mas não são a principal

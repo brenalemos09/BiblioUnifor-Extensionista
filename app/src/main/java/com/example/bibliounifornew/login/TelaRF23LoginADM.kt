@@ -16,14 +16,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.bibliounifornew.R
 import com.example.bibliounifornew.features.adm.dashboard.TelaRF28DashboardADM
-import com.example.bibliounifornew.data.AuthRepository
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 
 class TelaRF23LoginADM : AppCompatActivity() {
-
-    private val authRepository = AuthRepository()
-    private val db             = FirebaseFirestore.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,77 +61,22 @@ class TelaRF23LoginADM : AppCompatActivity() {
             editSenha.setSelection(editSenha.text.length)
         }
 
-        // ─── LOGIN COM FIREBASE AUTH + RBAC ──────────────────────────────────
+        // ─── LOGIN SIMULADO (PROTÓTIPO LOCAL COM CREDENCIAIS MOCKADAS) ───────
         botaoEntrar.setOnClickListener {
             val sEmail      = editEmail.text.toString().trim()
             val sSenha      = editSenha.text.toString()
             val sCredencial = editCredencial.text.toString().trim()
 
-            // 1) Validação básica
-            if (sEmail.isEmpty() || sSenha.isEmpty() || sCredencial.isEmpty()) {
-                erro.text       = "Preencha todos os campos"
+            if (sEmail == "admin@bibliounifor.com" && sSenha == "Admin123" && sCredencial == "DevsAB") {
+                Toast.makeText(this, "Acesso administrativo concedido!", Toast.LENGTH_SHORT).show()
+                val intent = Intent(this, TelaRF28DashboardADM::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                startActivity(intent)
+                finish()
+            } else {
+                Toast.makeText(this, "Credenciais administrativas inválidas", Toast.LENGTH_SHORT).show()
+                erro.text = "Credenciais administrativas inválidas"
                 erro.visibility = View.VISIBLE
-                return@setOnClickListener
-            }
-
-            // 2) Credencial master — ignoreCase + trim já aplicados
-            if (!sCredencial.equals("DevsAB", ignoreCase = true)) {
-                erro.text       = "Credencial de administrador inválida"
-                erro.visibility = View.VISIBLE
-                return@setOnClickListener
-            }
-
-            // 3) Loading state
-            botaoEntrar.isEnabled = false
-            botaoEntrar.text = "Verificando..."
-
-            // 4) Firebase Auth
-            authRepository.loginUsuario(sEmail, sSenha) { sucesso, uid ->
-                if (!sucesso || uid == null) {
-                    runOnUiThread {
-                        botaoEntrar.isEnabled = true
-                        botaoEntrar.text = "Entrar"
-                        erro.text       = "E-mail ou senha incorretos"
-                        erro.visibility = View.VISIBLE
-                    }
-                    return@loginUsuario
-                }
-
-                // 5) RBAC — verifica role no Firestore
-                db.collection("usuarios").document(uid).get()
-                    .addOnSuccessListener { doc ->
-                        val role = doc.getString("role") ?: ""
-                        when {
-                            !doc.exists() -> {
-                                FirebaseAuth.getInstance().signOut()
-                                botaoEntrar.isEnabled = true
-                                botaoEntrar.text = "Entrar"
-                                erro.text       = "Perfil não encontrado. Registre-se como ADM primeiro."
-                                erro.visibility = View.VISIBLE
-                            }
-                            role == "adm" -> {
-                                // Entra independente de cadastroConfirmado
-                                val intent = Intent(this, TelaRF28DashboardADM::class.java)
-                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                                startActivity(intent)
-                                finish()
-                            }
-                            else -> {
-                                FirebaseAuth.getInstance().signOut()
-                                botaoEntrar.isEnabled = true
-                                botaoEntrar.text = "Entrar"
-                                erro.text       = "Acesso negado: conta sem permissão de administrador"
-                                erro.visibility = View.VISIBLE
-                            }
-                        }
-                    }
-                    .addOnFailureListener {
-                        FirebaseAuth.getInstance().signOut()
-                        botaoEntrar.isEnabled = true
-                        botaoEntrar.text = "Entrar"
-                        erro.text       = "Não foi possível verificar as permissões. Tente novamente."
-                        erro.visibility = View.VISIBLE
-                    }
             }
         }
 

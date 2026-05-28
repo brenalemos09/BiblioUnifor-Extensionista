@@ -5,6 +5,8 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.Editable
 import android.text.InputType
 import android.text.TextWatcher
@@ -21,12 +23,11 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.bibliounifornew.R
 import com.example.bibliounifornew.login.TelaRF23LoginADM
 import com.google.android.material.button.MaterialButton
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
 
 class TelaRF39RedefinirADMInterno : AppCompatActivity() {
 
-    private val auth = FirebaseAuth.getInstance()
+    // Simulação do email do administrador logado no protótipo
+    private val mockAdminEmail = "admin@unifor.br"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,9 +42,9 @@ class TelaRF39RedefinirADMInterno : AppCompatActivity() {
         val iconOlhoSenha            = findViewById<ImageView>(R.id.iconOlhoSenha)
         val iconOlhoSenhaConfirmacao = findViewById<ImageView>(R.id.iconOlhoSenhaConfirmacao)
 
-        // BUG-D2 FIX: email real do admin — nunca hardcoded
+        // Protótipo: Exibe email mockado
         val textViewUserEmail = findViewById<TextView>(R.id.textViewUserEmail)
-        textViewUserEmail?.text = auth.currentUser?.email ?: ""
+        textViewUserEmail?.text = mockAdminEmail
 
         // TextViews de validação dinâmica
         val tvErroMin       = findViewById<TextView>(R.id.tvErroMinCaracteres)
@@ -112,37 +113,19 @@ class TelaRF39RedefinirADMInterno : AppCompatActivity() {
         // ── Botão X (fechar) ──────────────────────────────────────────────────
         btnX?.setOnClickListener { finish() }
 
-        // ── Salvar — chama updatePassword() real ──────────────────────────────
+        // ── Salvar — Simulação local ──────────────────────────────────────────
         btnSalvar.setOnClickListener {
-            val novaSenha   = etSenha.text.toString()
-            val currentUser = auth.currentUser
-
-            if (currentUser == null) {
-                Toast.makeText(this, getString(R.string.erro_sessao_expirada), Toast.LENGTH_SHORT).show()
-                finish()
-                return@setOnClickListener
-            }
+            val novaSenha = etSenha.text.toString()
 
             btnSalvar.isEnabled = false
+            btnSalvar.alpha = 0.5f
 
-            currentUser.updatePassword(novaSenha)
-                .addOnSuccessListener {
-                    btnSalvar.isEnabled = true
-                    exibirPopupSucesso()
-                }
-                .addOnFailureListener { e ->
-                    btnSalvar.isEnabled = true
-                    if (e is FirebaseAuthRecentLoginRequiredException) {
-                        Toast.makeText(this, getString(R.string.msg_sessao_expirada_senha), Toast.LENGTH_LONG).show()
-                        auth.signOut()
-                        val intent = Intent(this, TelaRF23LoginADM::class.java)
-                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        startActivity(intent)
-                        finish()
-                    } else {
-                        Toast.makeText(this, getString(R.string.erro_alterar_senha), Toast.LENGTH_LONG).show()
-                    }
-                }
+            // Simula latência de rede (800ms)
+            Handler(Looper.getMainLooper()).postDelayed({
+                btnSalvar.isEnabled = true
+                btnSalvar.alpha = 1.0f
+                exibirPopupSucesso()
+            }, 800)
         }
     }
 

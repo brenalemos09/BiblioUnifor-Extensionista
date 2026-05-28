@@ -21,21 +21,11 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import coil.load
 import com.example.bibliounifornew.R
-import com.example.bibliounifornew.data.UsuarioRepository
 import com.example.bibliounifornew.login.TelaRF01BemVindo
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
-import com.google.firebase.auth.EmailAuthProvider
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
-import java.io.ByteArrayOutputStream
 
 class TelaRF38ConfigADM : AppCompatActivity() {
-
-    private val auth = FirebaseAuth.getInstance()
-    private val db   = FirebaseFirestore.getInstance()
-    private val usuarioRepository = UsuarioRepository()
 
     // Launcher de galeria — registrado antes de onCreate
     private val galeria = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
@@ -52,6 +42,7 @@ class TelaRF38ConfigADM : AppCompatActivity() {
 
         val btnSalvar        = findViewById<MaterialButton>(R.id.btnSalvarAlteracoes)
         val btnRedefinirSenha = findViewById<MaterialButton>(R.id.btnRedefinirSenha)
+        val btnSairSessao     = findViewById<MaterialButton>(R.id.btnSairSessao)
         val btnApagarConta   = findViewById<MaterialButton>(R.id.btnApagarConta)
 
         // ── Olho para campo senha (decorativo, desabilitado) ──────────────────
@@ -72,23 +63,10 @@ class TelaRF38ConfigADM : AppCompatActivity() {
             editSenhaAtual.setSelection(editSenhaAtual.text.length)
         }
 
-        // ── Carrega dados do perfil ───────────────────────────────────────────
-        val uid = auth.currentUser?.uid
-        if (uid != null) {
-            db.collection("administradores").document(uid).get()
-                .addOnSuccessListener { doc ->
-                    editNome.setText(doc.getString("nome")    ?: "")
-                    editUsuario.setText(doc.getString("usuario") ?: "")
-                    // Carrega foto de perfil se disponível
-                    val fotoUrl = doc.getString("fotoUrl") ?: ""
-                    if (fotoUrl.isNotEmpty()) {
-                        imageFoto?.load(fotoUrl) {
-                            placeholder(R.drawable.user_placeholder)
-                            error(R.drawable.user_placeholder)
-                        }
-                    }
-                }
-        }
+        // ── Carrega dados do perfil (MOCK PADRONIZADO) ───────────────────────
+        editNome.setText("Administrador Unifor")
+        editUsuario.setText("admin@bibliounifor.com")
+        imageFoto?.setImageResource(R.drawable.user_placeholder)
 
         // ── Clique na foto de perfil ──────────────────────────────────────────
         imageFoto?.setOnClickListener {
@@ -111,22 +89,12 @@ class TelaRF38ConfigADM : AppCompatActivity() {
                 Toast.makeText(this, getString(R.string.erro_preencha_nome_usuario), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            if (uid == null) {
-                Toast.makeText(this, getString(R.string.erro_sessao_expirada), Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
 
             btnSalvar.isEnabled = false
-            db.collection("administradores").document(uid)
-                .set(mapOf("nome" to novoNome, "usuario" to novoUsuario), SetOptions.merge())
-                .addOnSuccessListener {
-                    btnSalvar.isEnabled = true
-                    Toast.makeText(this, getString(R.string.msg_alteracoes_salvas), Toast.LENGTH_SHORT).show()
-                }
-                .addOnFailureListener {
-                    btnSalvar.isEnabled = true
-                    Toast.makeText(this, getString(R.string.erro_salvar_perfil), Toast.LENGTH_SHORT).show()
-                }
+            btnSalvar.postDelayed({
+                btnSalvar.isEnabled = true
+                Toast.makeText(this, getString(R.string.msg_alteracoes_salvas), Toast.LENGTH_SHORT).show()
+            }, 500)
         }
 
         // ── Redefinir senha: abre tela interna ───────────────────────────────
@@ -134,49 +102,39 @@ class TelaRF38ConfigADM : AppCompatActivity() {
             startActivity(Intent(this, TelaRF39RedefinirADMInterno::class.java))
         }
 
+        // ── Logout ────────────────────────────────────────────────────────────
+        btnSairSessao?.setOnClickListener {
+            val intent = Intent(this, TelaRF01BemVindo::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+            finish()
+        }
+
         // ── Apagar conta ──────────────────────────────────────────────────────
         btnApagarConta?.setOnClickListener {
-            exibirPopupApagarConta(uid)
+            exibirPopupApagarConta()
         }
     }
 
-    // ─── UPLOAD DE FOTO ───────────────────────────────────────────────────────
+    // ─── UPLOAD DE FOTO (MOCK) ────────────────────────────────────────────────
 
     private fun processarESubirFoto(uri: Uri) {
-        val uid = auth.currentUser?.uid ?: return
         val imageFoto = findViewById<ImageView>(R.id.imageFotoAdm)
-
         try {
-            @Suppress("DEPRECATION")
-            val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, uri)
-            val redimensionado = Bitmap.createScaledBitmap(bitmap, 400, 400, true)
-            val baos = ByteArrayOutputStream()
-            redimensionado.compress(Bitmap.CompressFormat.JPEG, 80, baos)
-            val bytes = baos.toByteArray()
-
             imageFoto?.alpha = 0.5f
-
-            usuarioRepository.uploadFotoPerfil(uid, bytes, "administradores") { sucesso, url, erro ->
-                if (isFinishing || isDestroyed) return@uploadFotoPerfil
+            imageFoto?.postDelayed({
                 imageFoto?.alpha = 1.0f
-                if (sucesso && url != null) {
-                    imageFoto?.load(url) {
-                        placeholder(R.drawable.user_placeholder)
-                        error(R.drawable.user_placeholder)
-                    }
-                    Toast.makeText(this, getString(R.string.msg_foto_atualizada), Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this, getString(R.string.erro_salvar_perfil), Toast.LENGTH_SHORT).show()
-                }
-            }
+                imageFoto?.setImageURI(uri)
+                Toast.makeText(this, getString(R.string.msg_foto_atualizada), Toast.LENGTH_SHORT).show()
+            }, 1000)
         } catch (e: Exception) {
             Toast.makeText(this, getString(R.string.erro_processar_imagem), Toast.LENGTH_SHORT).show()
         }
     }
 
-    // ─── POPUP APAGAR CONTA — re-autentica antes de deletar ──────────────────
+    // ─── POPUP APAGAR CONTA (MOCK) ──────────────────────────────────────────
 
-    private fun exibirPopupApagarConta(uid: String?) {
+    private fun exibirPopupApagarConta() {
         val dialog = Dialog(this)
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
         dialog.setContentView(R.layout.popup_apagar_conta_adm)
@@ -195,42 +153,14 @@ class TelaRF38ConfigADM : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            val currentUser = auth.currentUser
-            val email       = currentUser?.email
-
-            if (currentUser == null || email.isNullOrEmpty()) {
-                Toast.makeText(this, getString(R.string.erro_sessao_expirada), Toast.LENGTH_SHORT).show()
-                dialog.dismiss()
-                return@setOnClickListener
-            }
-
             btnConfirmar.isEnabled = false
-
-            val credencial = EmailAuthProvider.getCredential(email, senha)
-            currentUser.reauthenticate(credencial)
-                .addOnSuccessListener {
-                    val firestoreDelete = if (!uid.isNullOrEmpty()) {
-                        db.collection("administradores").document(uid).delete()
-                    } else null
-
-                    currentUser.delete()
-                        .addOnSuccessListener {
-                            firestoreDelete?.addOnFailureListener { /* silencia erro de limpeza */ }
-                            dialog.dismiss()
-                            Toast.makeText(this, getString(R.string.msg_conta_apagada_sucesso), Toast.LENGTH_SHORT).show()
-                            val intent = Intent(this, com.example.bibliounifornew.login.TelaRF01BemVindo::class.java)
-                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                            startActivity(intent)
-                        }
-                        .addOnFailureListener {
-                            btnConfirmar.isEnabled = true
-                            Toast.makeText(this, getString(R.string.erro_apagar_conta), Toast.LENGTH_SHORT).show()
-                        }
-                }
-                .addOnFailureListener {
-                    btnConfirmar.isEnabled = true
-                    Toast.makeText(this, getString(R.string.erro_senha_incorreta), Toast.LENGTH_SHORT).show()
-                }
+            btnConfirmar.postDelayed({
+                dialog.dismiss()
+                Toast.makeText(this, getString(R.string.msg_conta_apagada_sucesso), Toast.LENGTH_SHORT).show()
+                val intent = Intent(this, com.example.bibliounifornew.login.TelaRF01BemVindo::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                startActivity(intent)
+            }, 1000)
         }
 
         dialog.show()
