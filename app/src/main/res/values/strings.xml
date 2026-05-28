@@ -117,7 +117,6 @@
     <string name="desc_editar_campo">Editar campo</string>
     <string name="label_usuario">Usuário</string>
     <string name="hint_usuario">Digite seu usuário</string>
-    <string name="usuario_exemplo">@joaobobo</string>
     <string name="label_bio">Bio</string>
     <string name="hint_bio">Escreva algo sobre você</string>
     <string name="bio_exemplo">Leitor ávido e fã de Machado de Assis.</string>
@@ -363,7 +362,6 @@
     <string name="btn_adicionar_midia">Adicionar Nova Mídia</string>
     <string name="label_acervo_midias">Acervo de Mídias</string>
     <string name="msg_nenhuma_midia">Nenhuma mídia encontrada.</string>
-    <string name="msg_filtro_aplicado">Filtro aplicado.</string>
     <string name="msg_filtros_limpos">Filtros limpos.</string>
     <string name="desc_icone_pesquisa_midia">Ícone de pesquisa</string>
     <string name="desc_filtro_lista">Filtrar lista</string>
@@ -378,7 +376,6 @@
     <string name="hint_arquivo_audiobook">Caminho ou link do Audiobook…</string>
     <string name="msg_livro_cadastrado_sucesso">Livro cadastrado com sucesso!</string>
     <string name="erro_preencha_infos_livro">Preencha todas as informações do livro.</string>
-    <string name="erro_data_invalida">Data inválida (dd/mm/aaaa).</string>
     <string name="erro_quantidade_invalida">Quantidade deve ser um número maior que zero.</string>
     <string name="erro_preencha_infos_extras">Preencha todas as informações extras</string>
     <string name="erro_adicione_arquivos">Adicione todos os arquivos necessários</string>
