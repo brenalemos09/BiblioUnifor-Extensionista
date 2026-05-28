@@ -129,8 +129,8 @@ class SolicitacaoRepository(
         val livroRef       = db.collection("livros").document(livroId)
         val emprestimoRef  = db.collection("solicitacoes_emprestimo").document()
         val agora          = System.currentTimeMillis()
-        // Prazo padrão: 14 dias (em milliseconds)
-        val dataDevolucao  = agora + (14L * 24 * 60 * 60 * 1_000)
+        // Prazo padrão: 15 dias — alinhado com RF34.PRAZO_MS
+        val dataDevolucao  = agora + (15L * 24 * 60 * 60 * 1_000)
 
         return try {
             db.runTransaction { transaction ->

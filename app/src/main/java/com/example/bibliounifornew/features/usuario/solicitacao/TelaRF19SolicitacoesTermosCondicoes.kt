@@ -12,12 +12,18 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.example.bibliounifornew.R
 import com.example.bibliounifornew.data.Solicitacao
 import com.example.bibliounifornew.data.SolicitacaoRepository
 import com.example.bibliounifornew.features.usuario.livro.TelaRF12TelaDoLivro
 import com.example.bibliounifornew.data.UsuarioRepository
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 class TelaRF19SolicitacoesTermosCondicoes : AppCompatActivity() {
 
@@ -26,6 +32,7 @@ class TelaRF19SolicitacoesTermosCondicoes : AppCompatActivity() {
     private val solicitacaoRepository = SolicitacaoRepository()
     private val usuarioRepository     = UsuarioRepository()
     private val auth                  = FirebaseAuth.getInstance()
+    private val db                    = FirebaseFirestore.getInstance()
 
     private var tituloLivro: String = ""
     private var autorLivro: String = ""
@@ -76,9 +83,13 @@ class TelaRF19SolicitacoesTermosCondicoes : AppCompatActivity() {
     // ─── PERSISTÊNCIA VIA REPOSITORY ─────────────────────────────────────────
 
     /**
-     * Constrói o objeto [Solicitacao] e delega a gravação ao
-     * [SolicitacaoRepository]. Apenas após o sucesso confirmado pelo Firestore
-     * o popup de sucesso é exibido — nenhum feedback falso é mostrado.
+     * Verifica duplicata e grava a solicitação de forma segura.
+     *
+     * Passo 1 (IO thread): consulta "solicitacoes_midia" para o par uid+livroId
+     *   com status em {pendente, em_andamento}. Se já existir, exibe Toast e para.
+     *
+     * Passo 2 (Main thread): chama [SolicitacaoRepository.gravarSolicitacao] via
+     *   callback — o botão fica desabilitado até o Firestore confirmar o write.
      *
      * @param tipoMidia "PDF" | "Braille" | "Audiobook" | "Reserva"
      * @param livroId   ID do documento na coleção "livros"
@@ -90,38 +101,79 @@ class TelaRF19SolicitacoesTermosCondicoes : AppCompatActivity() {
             return
         }
 
-        val solicitacao = Solicitacao(
-            uidUsuario      = uid,
-            uidAluno        = uid,        // alias de compatibilidade com RF31 (ADM)
-            idLivro         = livroId,
-            tipos           = tipoMidia,
-            status          = "pendente",
-            dataSolicitacao = System.currentTimeMillis()
-        )
-
-        // Desabilita o botão durante o request para evitar duplo envio
         val btnConfirmar = findViewById<Button>(R.id.buttonConfirmarTermosTela)
         btnConfirmar?.isEnabled = false
 
-        solicitacaoRepository.gravarSolicitacao(solicitacao) { sucesso, _, erro ->
-            if (isFinishing || isDestroyed) return@gravarSolicitacao
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                // ── DEDUPLICATION CHECK ───────────────────────────────────────
+                // Evita que o mesmo usuário crie N solicitações para o mesmo livro.
+                val duplicata = db.collection("solicitacoes_midia")
+                    .whereEqualTo("uidUsuario", uid)
+                    .whereEqualTo("idLivro", livroId)
+                    .whereIn("status", listOf("pendente", "em_andamento"))
+                    .get()
+                    .await()
 
-            if (sucesso) {
-                // RF15.8: Registra no histórico a solicitação
-                val acao = when(tipoMidia) {
-                    "Reserva" -> "Reserva Solicitada"
-                    else -> "$tipoMidia Solicitado"
+                if (!duplicata.isEmpty) {
+                    withContext(Dispatchers.Main) {
+                        if (isFinishing || isDestroyed) return@withContext
+                        btnConfirmar?.isEnabled = true
+                        Toast.makeText(
+                            this@TelaRF19SolicitacoesTermosCondicoes,
+                            getString(R.string.msg_solicitacao_duplicada),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                    return@launch
                 }
-                usuarioRepository.registrarNoHistorico(uid, livroId, tituloLivro, autorLivro, acao)
 
-                showPopupSucesso(livroId)
-            } else {
-                btnConfirmar?.isEnabled = true
-                Toast.makeText(
-                    this,
-                    "Erro ao registrar solicitação: $erro",
-                    Toast.LENGTH_SHORT
-                ).show()
+                // ── GRAVAR NO FIRESTORE ───────────────────────────────────────
+                val solicitacao = Solicitacao(
+                    uidUsuario      = uid,
+                    uidAluno        = uid,      // alias de compatibilidade com RF31 (ADM)
+                    idLivro         = livroId,
+                    tipos           = tipoMidia,
+                    status          = "pendente",
+                    dataSolicitacao = System.currentTimeMillis()
+                )
+
+                withContext(Dispatchers.Main) {
+                    if (isFinishing || isDestroyed) return@withContext
+
+                    solicitacaoRepository.gravarSolicitacao(solicitacao) { sucesso, _, erro ->
+                        if (isFinishing || isDestroyed) return@gravarSolicitacao
+
+                        if (sucesso) {
+                            // RF15.8: Registra no histórico a solicitação
+                            val acao = when (tipoMidia) {
+                                "Reserva" -> "Reserva Solicitada"
+                                else      -> "$tipoMidia Solicitado"
+                            }
+                            usuarioRepository.registrarNoHistorico(
+                                uid, livroId, tituloLivro, autorLivro, acao)
+                            showPopupSucesso(livroId)
+                        } else {
+                            btnConfirmar?.isEnabled = true
+                            Toast.makeText(
+                                this@TelaRF19SolicitacoesTermosCondicoes,
+                                "Erro ao registrar solicitação: $erro",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                }
+
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    if (isFinishing || isDestroyed) return@withContext
+                    btnConfirmar?.isEnabled = true
+                    Toast.makeText(
+                        this@TelaRF19SolicitacoesTermosCondicoes,
+                        getString(R.string.erro_conexao_banco),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
         }
     }

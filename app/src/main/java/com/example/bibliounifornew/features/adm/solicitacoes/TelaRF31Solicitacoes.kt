@@ -1,7 +1,7 @@
 package com.example.bibliounifornew.features.adm.solicitacoes
 
+import android.app.AlertDialog
 import android.app.Dialog
-import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.InputType
@@ -9,7 +9,6 @@ import android.text.TextWatcher
 import android.view.Window
 import android.view.ViewGroup
 import android.widget.*
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -37,11 +36,6 @@ class TelaRF31Solicitacoes : AppCompatActivity() {
     private lateinit var adapter: SolicitacoesMidiaAdapter
     private val listaSolicit    = mutableListOf<ItemSolicitacaoMidia>()
 
-    // Launcher moderno — substitui startActivityForResult deprecado
-    private val fileLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { /* resultado não usado: a aprovação já foi salva no Firestore */ }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.telarf31_solicitacoes_adm)
@@ -49,10 +43,10 @@ class TelaRF31Solicitacoes : AppCompatActivity() {
         // ─── RECYCLERVIEW ─────────────────────────────────────────────────────
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerViewSolicitacoesMidia)
         adapter = SolicitacoesMidiaAdapter(
-            lista            = listaSolicit,
+            lista             = listaSolicit,
             onVerSolicitacoes = { item -> abrirPopupSolicitacoes(item) },
-            onEnviarAudiobook = { item -> escolherArquivo("audio/*", item, "audiobook") },
-            onEnviarPdf       = { item -> escolherArquivo("application/pdf", item, "pdf") },
+            onEnviarAudiobook = { item -> abrirPopupLink(item, "audiobook") },
+            onEnviarPdf       = { item -> abrirPopupLink(item, "pdf") },
             onBraille         = { item -> notificarBraille(item) },
             onExcluir         = { item, pos -> abrirPopupExcluir(item, pos) }
         )
@@ -252,23 +246,93 @@ class TelaRF31Solicitacoes : AppCompatActivity() {
         dialog.window?.setLayout(w, ViewGroup.LayoutParams.WRAP_CONTENT)
     }
 
-    // ─── ESCOLHER ARQUIVO ────────────────────────────────────────────────────
+    // ─── POPUP DE LINK (substitui o file picker) ─────────────────────────────
 
-    private fun escolherArquivo(mimeType: String, item: ItemSolicitacaoMidia, tipo: String) {
-        try {
-            val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
-                type = mimeType
-                addCategory(Intent.CATEGORY_OPENABLE)
-            }
-            fileLauncher.launch(Intent.createChooser(intent, "Selecione o arquivo"))
-            db.collection("solicitacoes_midia").document(item.docId)
-                .set(mapOf("status" to "concluido", "status_$tipo" to "aprovado"), SetOptions.merge())
-                .addOnSuccessListener {
-                    criarNotificacaoMidia(item.uidUsuario)
-                    Toast.makeText(this, "${tipo.replaceFirstChar { it.uppercase() }} aprovado e usuário notificado.", Toast.LENGTH_SHORT).show()
+    /**
+     * Exibe um AlertDialog com um EditText para o ADM colar a URL do PDF ou Audiobook.
+     *
+     * Ao confirmar, salva a URL no documento do livro ([item.idLivro]) e marca a
+     * solicitação como "concluido" — sem nenhum upload de arquivo para o Storage.
+     *
+     * @param tipo "pdf" → campo "linkPdf" / "audiobook" → campo "linkAudiobook"
+     */
+    private fun abrirPopupLink(item: ItemSolicitacaoMidia, tipo: String) {
+        val campoFirestore = if (tipo == "pdf") "linkPdf" else "linkAudiobook"
+        val titulo         = if (tipo == "pdf") "Link do PDF" else "Link do Audiobook"
+
+        val editLink = EditText(this).apply {
+            hint      = "Cole a URL aqui (https://...)"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+            setPadding(64, 40, 64, 24)
+            setSingleLine(false)
+            maxLines = 3
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(titulo)
+            .setMessage("Insira o Link da Mídia a ser disponibilizada para o usuário.")
+            .setView(editLink)
+            .setPositiveButton("Salvar") { _, _ ->
+                val link = editLink.text.toString().trim()
+                if (link.isEmpty()) {
+                    Toast.makeText(this, "Informe um link válido.", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
                 }
-        } catch (e: Exception) {
-            Toast.makeText(this, "Erro ao abrir seletor de arquivo.", Toast.LENGTH_SHORT).show()
+                if (item.idLivro.isEmpty()) {
+                    Toast.makeText(this, "ID do livro não encontrado. Verifique a solicitação.", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                salvarLinkMidia(item, campoFirestore, link)
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    /**
+     * Persiste o link no Firestore em IO thread:
+     * 1. Atualiza [campoFirestore] no doc do livro
+     * 2. Marca a solicitação como "concluido"
+     * 3. Envia notificação ao aluno via subcoleção
+     */
+    private fun salvarLinkMidia(
+        item           : ItemSolicitacaoMidia,
+        campoFirestore : String,
+        link           : String
+    ) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                db.collection("livros").document(item.idLivro)
+                    .update(campoFirestore, link)
+                    .await()
+
+                db.collection("solicitacoes_midia").document(item.docId)
+                    .set(
+                        mapOf(
+                            "status"             to "concluido",
+                            "status_$campoFirestore" to "aprovado"
+                        ),
+                        SetOptions.merge()
+                    )
+                    .await()
+
+                criarNotificacaoMidia(item.uidUsuario)
+
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        this@TelaRF31Solicitacoes,
+                        "Link salvo e usuário notificado!",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        this@TelaRF31Solicitacoes,
+                        "Erro ao salvar link: ${e.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
         }
     }
 
