@@ -30,6 +30,7 @@ class TelaRF37InfoLivroADM : AppCompatActivity() {
     private val auth = FirebaseAuth.getInstance()
     private var livroId: String = ""
     private var activeDialog: Dialog? = null
+    private var qtdDisponivel: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -147,12 +148,20 @@ class TelaRF37InfoLivroADM : AppCompatActivity() {
                         }
                 }
 
-                // BUG-F2 FIX: lê campo "quantidade" (padrão do projeto) com fallback
-                val total = doc.getLong("quantidade")
-                    ?: doc.getLong("exemplares")
+                // BUG-2 FIX: separa exemplares totais (campo "exemplares") de disponíveis
+                // ("quantidade"), atualiza o display "X/Y" e respeita a invariante
+                // disponível <= total no método atualizarExemplares().
+                val totalExemplares = (doc.getLong("exemplares")
                     ?: doc.getLong("totalExemplares")
-                    ?: 0L
-                findViewById<TextView>(R.id.textExemplaresTotal)?.text = total.toString()
+                    ?: doc.getLong("quantidade")
+                    ?: 0L).toInt()
+                val disponivelExemplares = (doc.getLong("quantidade")
+                    ?: doc.getLong("estoque")
+                    ?: totalExemplares.toLong()).toInt().coerceAtMost(totalExemplares)
+
+                qtdDisponivel = disponivelExemplares
+                findViewById<TextView>(R.id.textExemplaresTotal)?.text   = totalExemplares.toString()
+                findViewById<TextView>(R.id.textExemplaresDisplay)?.text = "$disponivelExemplares/$totalExemplares"
 
                 // BUG-F5 FIX: usa ID direto em vez de getChildAt(0)
                 val coverUrlVal = doc.getString("coverUrl") ?: doc.getString("imagemUrl") ?: ""
@@ -216,19 +225,33 @@ class TelaRF37InfoLivroADM : AppCompatActivity() {
     // ─── CONTROLE DE EXEMPLARES ───────────────────────────────────────────────
 
     private fun atualizarExemplares(delta: Int) {
-        val tvTotal = findViewById<TextView>(R.id.textExemplaresTotal)
-        val atual   = tvTotal.text.toString().toIntOrNull() ?: 0
-        val novo    = (atual + delta).coerceAtLeast(0)
+        val tvTotal   = findViewById<TextView>(R.id.textExemplaresTotal)
+        val tvDisplay = findViewById<TextView>(R.id.textExemplaresDisplay)
+        val totalAtual = tvTotal.text.toString().toIntOrNull() ?: 0
+        val novoTotal  = (totalAtual + delta).coerceAtLeast(0)
+        // BUG-2 FIX: disponível não pode superar o total — cap imediato
+        val novaQtd    = qtdDisponivel.coerceAtMost(novoTotal)
 
-        // BUG-F2 FIX: salva em "quantidade" (campo padrão lido por TelaRF32LivrosCRUD)
+        // Atualização imediata da UI (optimistic update — sem esperar Firebase)
+        tvTotal.text   = novoTotal.toString()
+        tvDisplay.text = "$novaQtd/$novoTotal"
+
         db.collection("livros").document(livroId)
-            .update(mapOf("quantidade" to novo, "exemplares" to novo))
+            .update(mapOf(
+                "exemplares"      to novoTotal,
+                "totalExemplares" to novoTotal,
+                "quantidade"      to novaQtd,
+                "estoque"         to novaQtd
+            ))
             .addOnSuccessListener {
                 if (isFinishing || isDestroyed) return@addOnSuccessListener
-                tvTotal.text = novo.toString()
+                qtdDisponivel = novaQtd
             }
             .addOnFailureListener {
                 if (isFinishing || isDestroyed) return@addOnFailureListener
+                // Reverte a UI se a gravação falhou
+                tvTotal.text   = totalAtual.toString()
+                tvDisplay.text = "$qtdDisponivel/$totalAtual"
                 Toast.makeText(this, getString(R.string.erro_conexao_banco), Toast.LENGTH_SHORT).show()
             }
     }

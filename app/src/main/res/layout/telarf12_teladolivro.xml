@@ -266,6 +266,23 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- BOTÃO ALUGAR LIVRO FÍSICO -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAlugarLivro"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="16dp"
+                android:text="@string/btn_alugar_livro"
+                android:textAllCaps="false"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                app:backgroundTint="@color/biblio_blue"
+                app:cornerRadius="28dp"
+                app:elevation="2dp" />
+
             <!-- SINOPSE -->
             <TextView
                 android:id="@+id/labelSinopse"
@@ -328,8 +345,60 @@
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="@color/biblio_dark"
-                android:layout_marginTop="32dp"
-                android:layout_marginBottom="40dp"/>
+                android:layout_marginTop="32dp" />
+
+            <!-- SEÇÃO DE AVALIAÇÕES POR TEXTO -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="12dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/label_avaliacoes_title"
+                    android:textColor="@color/biblio_dark"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAvaliarLivro"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="@string/btn_avaliar_livro"
+                    android:textAllCaps="false"
+                    android:textSize="13sp"
+                    android:textColor="@color/biblio_blue"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    app:strokeColor="@color/biblio_blue"
+                    app:cornerRadius="20dp" />
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/textSemAvaliacoesTexto"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/msg_sem_avaliacoes_texto"
+                android:textColor="#9E9E9E"
+                android:textSize="14sp"
+                android:gravity="center"
+                android:layout_marginBottom="8dp"
+                android:visibility="gone" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerViewAvaliacoes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                android:overScrollMode="never"
+                android:layout_marginBottom="40dp" />
 
         </LinearLayout>
     </ScrollView>

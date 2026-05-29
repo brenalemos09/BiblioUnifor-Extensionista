@@ -215,10 +215,13 @@ class TelaRF30UsuariosParaADM : AppCompatActivity() {
                                         val dataFmt = if (ultima.dataSolicitacao > 0)
                                             sdf.format(Date(ultima.dataSolicitacao)) else "N/A"
                                         txtData?.text = getString(R.string.popup_data_pedido, dataFmt)
+                                        // BUG-4B FIX: usa ic_sem_capa — sem Tolkien estático
                                         val coverUrl = doc.getString("coverUrl") ?: ""
-                                        imgCapa?.load(coverUrl.ifEmpty { R.drawable.osda }) {
-                                            placeholder(R.drawable.osda)
-                                            error(R.drawable.osda)
+                                        imgCapa?.load(coverUrl.ifEmpty { null }) {
+                                            crossfade(true)
+                                            placeholder(R.drawable.ic_sem_capa)
+                                            error(R.drawable.ic_sem_capa)
+                                            fallback(R.drawable.ic_sem_capa)
                                         }
                                     }
                                     .addOnFailureListener {

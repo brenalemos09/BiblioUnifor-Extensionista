@@ -15,7 +15,11 @@
       "Bash(Select-Object -ExpandProperty FullName)",
       "Bash(git rebase *)",
       "Bash(git push *)",
-      "Bash(gh pr create --base main --head dev-AndersonV10 --title 'Integração de Acervo Inteligente, Estoque Dinâmico e UI Acessível' --body ' *)"
+      "Bash(gh pr create --base main --head dev-AndersonV10 --title 'Integração de Acervo Inteligente, Estoque Dinâmico e UI Acessível' --body ' *)",
+      "Bash(./gradlew compileDebugKotlin)",
+      "Bash(./gradlew --stop)",
+      "Bash(./gradlew compileDebugKotlin --no-daemon)",
+      "Bash(./gradlew compileDebugKotlin --no-daemon --info)"
     ]
   }
 }

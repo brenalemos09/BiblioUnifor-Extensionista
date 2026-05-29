@@ -19,7 +19,8 @@ data class ItemAluguel(
     val status         : String = "pendente",
     val nomeUsuario    : String = "Usuário",
     /** fotoUsuario: URL do avatar do aluno, obtida via JOIN em usuarios/{uidAluno}. */
-    val fotoUsuario    : String = "",
+    val fotoLivro: String = "",      // Adicione isto
+    val fotoUsuario: String = "",    // Adicione isto
     val tituloLivro    : String = "Título Indisponível",
     val autorLivro     : String = "Autor Desconhecido",
     /** coverUrl: URL da capa do livro, obtida via JOIN em livros/{idLivro}. */

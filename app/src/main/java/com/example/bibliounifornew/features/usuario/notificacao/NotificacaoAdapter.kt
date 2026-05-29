@@ -97,8 +97,13 @@ class NotificacaoAdapter(
         }
 
         // ── Clique no card ────────────────────────────────────────────────────
+        // Usa adapterPosition para evitar stale closure após reciclagem.
+        // FLAG_ACTIVITY_SINGLE_TOP é aplicado na Activity via onNotifClick.
         holder.itemView.setOnClickListener {
-            onNotifClick?.invoke(notif)
+            val pos = holder.adapterPosition
+            if (pos != RecyclerView.NO_ID.toInt()) {
+                onNotifClick?.invoke(lista[pos])
+            }
         }
     }
 

@@ -4,14 +4,18 @@ import android.app.Dialog
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.View
+import android.view.Window
 import android.widget.ImageView
 import android.widget.RatingBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import com.example.bibliounifornew.R
 import com.example.bibliounifornew.data.AppDatabase
@@ -20,11 +24,14 @@ import com.example.bibliounifornew.data.EntidadeLivro
 import com.example.bibliounifornew.data.LivroDao
 import com.example.bibliounifornew.data.UsuarioRepository
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.textfield.TextInputEditText
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
 class TelaRF12TelaDoLivro : AppCompatActivity() {
@@ -45,6 +52,9 @@ class TelaRF12TelaDoLivro : AppCompatActivity() {
     private var livroListener     : ListenerRegistration? = null
     private lateinit var livroDao : LivroDao
 
+    private lateinit var avaliacoesAdapter: AvaliacoesLivroAdapter
+    private val listaAvaliacoes = mutableListOf<ItemAvaliacaoLivro>()
+
     private var activeDialog: Dialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,10 +73,13 @@ class TelaRF12TelaDoLivro : AppCompatActivity() {
 
         livroDao = AppDatabase.getDatabase(this).livroDao()
 
+        configurarRecyclerAvaliacoes()
+
         carregarDadosDoLivro(livroIdAtual)
         carregarNota()
         carregarStatusLeitura()
         carregarMediaAvaliacoes()
+        carregarAvaliacoesTexto()
 
         configurarBotoesDeStatus()
         configurarBotoesAcao()
@@ -391,6 +404,222 @@ class TelaRF12TelaDoLivro : AppCompatActivity() {
             val intent = Intent(this, com.example.bibliounifornew.features.usuario.biblioteca.TelaRF14LeituraActivity::class.java)
             intent.putExtra("LIVRO_ID", livroIdAtual)
             startActivity(intent)
+        }
+        findViewById<MaterialButton>(R.id.btnAlugarLivro)?.setOnClickListener {
+            alugarLivro()
+        }
+        findViewById<MaterialButton>(R.id.btnAvaliarLivro)?.setOnClickListener {
+            abrirPopupAvaliar()
+        }
+    }
+
+    // ─── SISTEMA DE AVALIAÇÕES POR TEXTO ─────────────────────────────────────
+
+    private fun configurarRecyclerAvaliacoes() {
+        avaliacoesAdapter = AvaliacoesLivroAdapter(listaAvaliacoes)
+        val rv = findViewById<RecyclerView>(R.id.recyclerViewAvaliacoes)
+        rv?.layoutManager = LinearLayoutManager(this)
+        rv?.adapter        = avaliacoesAdapter
+    }
+
+    private fun carregarAvaliacoesTexto() {
+        if (livroIdAtual.isEmpty()) return
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val snapshot = db.collection("livros")
+                    .document(livroIdAtual)
+                    .collection("avaliacoes")
+                    .orderBy("dataMs", Query.Direction.DESCENDING)
+                    .limit(20)
+                    .get()
+                    .await()
+
+                val novaLista = snapshot.documents.mapNotNull { doc ->
+                    val texto = doc.getString("textoAvaliacao") ?: return@mapNotNull null
+                    ItemAvaliacaoLivro(
+                        idUsuario      = doc.getString("idUsuario")   ?: "",
+                        nomeUsuario    = doc.getString("nomeUsuario") ?: "Usuário",
+                        textoAvaliacao = texto,
+                        dataMs         = doc.getLong("dataMs") ?: 0L
+                    )
+                }
+
+                withContext(Dispatchers.Main) {
+                    if (isFinishing || isDestroyed) return@withContext
+                    avaliacoesAdapter.atualizarLista(novaLista)
+                    val txtVazio = findViewById<TextView>(R.id.textSemAvaliacoesTexto)
+                    txtVazio?.visibility = if (novaLista.isEmpty()) View.VISIBLE else View.GONE
+                }
+            } catch (_: Exception) {
+                // Silencia erros de rede — a seção simplesmente fica vazia
+            }
+        }
+    }
+
+    private fun abrirPopupAvaliar() {
+        val uid = authRepository.getUsuarioAtual()?.uid ?: run {
+            safeToast(getString(R.string.erro_login_necessario))
+            return
+        }
+
+        val dialog = Dialog(this)
+        activeDialog = dialog
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.popup_avaliar_livro)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.92).toInt(),
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        dialog.setOnDismissListener { activeDialog = null }
+
+        val editTexto  = dialog.findViewById<TextInputEditText>(R.id.editTextoAvaliacao)
+        val btnConfirm = dialog.findViewById<MaterialButton>(R.id.btnConfirmarAvaliacao)
+        val btnCancel  = dialog.findViewById<TextView>(R.id.btnCancelarAvaliacao)
+
+        btnConfirm?.setOnClickListener {
+            val texto = editTexto?.text.toString().trim()
+            if (texto.isEmpty()) {
+                safeToast(getString(R.string.erro_avaliacao_vazia))
+                return@setOnClickListener
+            }
+            btnConfirm.isEnabled = false
+            btnConfirm.text      = getString(R.string.msg_processando)
+            salvarAvaliacao(uid, texto, dialog, btnConfirm)
+        }
+        btnCancel?.setOnClickListener { dialog.dismiss() }
+        dialog.show()
+    }
+
+    private fun salvarAvaliacao(
+        uid    : String,
+        texto  : String,
+        dialog : Dialog,
+        btnConfirm: MaterialButton
+    ) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                // JOIN: busca o nome do usuário no Firestore
+                val userDoc     = db.collection("usuarios").document(uid).get().await()
+                val nomeUsuario = userDoc.getString("nome")
+                    ?: userDoc.getString("email")
+                    ?: "Usuário"
+
+                val avaliacao = hashMapOf(
+                    "idUsuario"      to uid,
+                    "nomeUsuario"    to nomeUsuario,
+                    "textoAvaliacao" to texto,
+                    "dataMs"         to System.currentTimeMillis()
+                )
+
+                db.collection("livros")
+                    .document(livroIdAtual)
+                    .collection("avaliacoes")
+                    .add(avaliacao)
+                    .await()
+
+                withContext(Dispatchers.Main) {
+                    if (isFinishing || isDestroyed) return@withContext
+                    dialog.dismiss()
+                    safeToast(getString(R.string.msg_avaliacao_salva), Toast.LENGTH_SHORT)
+                    carregarAvaliacoesTexto()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    if (isFinishing || isDestroyed) return@withContext
+                    btnConfirm.isEnabled = true
+                    btnConfirm.text      = getString(R.string.btn_confirmar)
+                    safeToast(getString(R.string.fmt_erro_solicitacao, e.message), Toast.LENGTH_LONG)
+                }
+            }
+        }
+    }
+
+    // ─── ALUGUEL DE LIVRO FÍSICO ──────────────────────────────────────────────
+
+    private fun alugarLivro() {
+        if (livroIdAtual.isEmpty()) {
+            safeToast(getString(R.string.msg_aguarde_carregamento))
+            return
+        }
+        val uid = authRepository.getUsuarioAtual()?.uid ?: run {
+            safeToast(getString(R.string.erro_login_necessario))
+            return
+        }
+
+        val btnAlugar = findViewById<MaterialButton>(R.id.btnAlugarLivro) ?: return
+
+        // Feedback imediato: bloqueia re-clique e sinaliza processamento
+        btnAlugar.isEnabled = false
+        btnAlugar.text      = getString(R.string.msg_processando)
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                // 1. Verifica duplicata — solicitação pendente ou ativa para este livro
+                val duplicata = db.collection("solicitacoes_emprestimo")
+                    .whereEqualTo("uidAluno", uid)
+                    .whereEqualTo("idLivro", livroIdAtual)
+                    .whereIn("status", listOf("pendente", "ativo"))
+                    .get()
+                    .await()
+
+                if (!duplicata.isEmpty) {
+                    withContext(Dispatchers.Main) {
+                        if (isFinishing || isDestroyed) return@withContext
+                        btnAlugar.isEnabled = true
+                        btnAlugar.text      = getString(R.string.btn_alugar_livro)
+                        safeToast(getString(R.string.msg_solicitacao_duplicada), Toast.LENGTH_LONG)
+                    }
+                    return@launch
+                }
+
+                // 2. Verifica estoque atualizado no Firestore (leitura em IO — sem bloquear UI)
+                val livroDoc = db.collection("livros").document(livroIdAtual).get().await()
+                val estoqueAtual = (livroDoc.getLong("quantidade")
+                    ?: livroDoc.getLong("estoque")
+                    ?: livroDoc.getLong("stock")
+                    ?: 0L).toInt()
+
+                if (estoqueAtual <= 0) {
+                    withContext(Dispatchers.Main) {
+                        if (isFinishing || isDestroyed) return@withContext
+                        btnAlugar.isEnabled = true
+                        btnAlugar.text      = getString(R.string.btn_alugar_livro)
+                        safeToast(getString(R.string.msg_sem_estoque_aluguel), Toast.LENGTH_LONG)
+                    }
+                    return@launch
+                }
+
+                // 3. Grava solicitação de empréstimo
+                val agora = System.currentTimeMillis()
+                val solicitacao = hashMapOf(
+                    "uidAluno"  to uid,
+                    "idLivro"   to livroIdAtual,
+                    "titulo"    to tituloAtual,
+                    "autor"     to autorAtual,
+                    "coverUrl"  to coverUrlAtual,
+                    "setor"     to setorAtual,
+                    "status"    to "pendente",
+                    "dataMs"    to agora,
+                    "criadoEm"  to agora
+                )
+                db.collection("solicitacoes_emprestimo").add(solicitacao).await()
+
+                withContext(Dispatchers.Main) {
+                    if (isFinishing || isDestroyed) return@withContext
+                    btnAlugar.isEnabled = true
+                    btnAlugar.text      = getString(R.string.btn_alugar_livro)
+                    safeToast(getString(R.string.msg_solicitacao_aluguel_enviada), Toast.LENGTH_LONG)
+                }
+
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    if (isFinishing || isDestroyed) return@withContext
+                    btnAlugar.isEnabled = true
+                    btnAlugar.text      = getString(R.string.btn_alugar_livro)
+                    safeToast(getString(R.string.fmt_erro_solicitacao, e.message), Toast.LENGTH_LONG)
+                }
+            }
         }
     }
 

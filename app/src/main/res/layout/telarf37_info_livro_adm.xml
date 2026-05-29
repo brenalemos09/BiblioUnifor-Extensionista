@@ -600,10 +600,11 @@
                         android:textSize="18sp" />
 
                     <TextView
+                        android:id="@+id/textExemplaresDisplay"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-black"
-                        android:text="10/30"
+                        android:text="—/—"
                         android:textColor="@color/biblio_blue"
                         android:textSize="18sp" />
 
