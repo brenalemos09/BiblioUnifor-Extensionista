@@ -1,9 +1,8 @@
 package com.example.bibliounifornew.features.usuario.perfil
 
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
+import android.util.Log
 import android.os.Bundle
 import android.text.method.HideReturnsTransformationMethod
 import android.text.method.PasswordTransformationMethod
@@ -15,10 +14,6 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import coil.load
 import com.example.bibliounifornew.R
 import com.example.bibliounifornew.data.AuthRepository
@@ -30,7 +25,8 @@ import com.google.android.material.imageview.ShapeableImageView
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import java.io.ByteArrayOutputStream
+import com.google.firebase.firestore.SetOptions
+import com.google.firebase.storage.FirebaseStorage
 
 class TelaRF09Configuracao : AppCompatActivity() {
 
@@ -181,114 +177,119 @@ class TelaRF09Configuracao : AppCompatActivity() {
 
     // ─── UPLOAD DE FOTO ───────────────────────────────────────────────────────
 
-    private fun processarESubirFoto(uri: Uri) {
-        val uid = usuarioAtual?.uid ?: return
+    /**
+     * Abre uma InputStream segura a partir do URI selecionado na galeria e faz
+     * o upload para o Firebase Storage via [storageRef.putStream].
+     *
+     * Ao contrário de putFile(uri), que falha com "Object does not exist at location"
+     * quando a URI do picker já foi revogada pelo sistema (comportamento documentado
+     * em dispositivos Android 10+), contentResolver.openInputStream(imageUri) mantém
+     * o acesso ao arquivo enquanto o stream não é fechado.
+     *
+     * Fluxo:
+     *   1. Abre stream → verifica null antes de qualquer operação
+     *   2. putStream(stream) → upload para Storage
+     *   3. addOnSuccessListener → fecha stream + busca downloadUrl
+     *   4. Persiste fotoUrl no Firestore em usuarios/{uid}
+     *   5. Atualiza ImageView local via Coil
+     */
+    private fun processarESubirFoto(imageUri: Uri) {
+        val uid = usuarioAtual?.uid
+        if (uid.isNullOrBlank()) {
+            // UID vazio antes mesmo de tocar no Storage → sessão expirada
+            Toast.makeText(this, getString(R.string.erro_sessao_expirada), Toast.LENGTH_SHORT).show()
+            return
+        }
+
         val imagePerfil = findViewById<ShapeableImageView>(R.id.imagePerfilUsuario)
 
-        // Feedback visual imediato — escurece avatar enquanto processa
-        imagePerfil?.alpha = 0.5f
+        // Hierarquia limpa: usuarios/{uid}/perfil.jpg
+        // Separar por .child() evita problemas de encoding em UIDs com caracteres especiais.
+        val storageRef = FirebaseStorage.getInstance()
+            .reference
+            .child("usuarios")
+            .child(uid)
+            .child("perfil.jpg")
 
-        // Todo I/O (leitura + decode + compressão) em Dispatchers.IO.
-        // lifecycleScope cancela automaticamente se a Activity for destruída.
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                // ── Passo 1: lê apenas dimensões, zero custo de memória ────────
-                val boundsOpts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                contentResolver.openInputStream(uri)?.use {
-                    BitmapFactory.decodeStream(it, null, boundsOpts)
-                }
+        // Log para inspecionar o caminho exato montado — remover antes de produção
+        Log.d("UPLOAD_DEBUG", "UID: $uid")
+        Log.d("UPLOAD_DEBUG", "Caminho do Storage: ${storageRef.path}")
 
-                // ── Passo 2: inSampleSize para não estourar RAM com foto de câmera
-                //    Decodifica em no máx 500×500 antes de escalar para 250×250.
-                val sampleSize = calcularInSampleSize(boundsOpts, reqW = 500, reqH = 500)
-                val decodeOpts = BitmapFactory.Options().apply {
-                    inJustDecodeBounds = false
-                    inSampleSize       = sampleSize
-                }
-                val original = contentResolver.openInputStream(uri)?.use { stream ->
-                    BitmapFactory.decodeStream(stream, null, decodeOpts)
-                }
+        try {
+            val stream = contentResolver.openInputStream(imageUri)
+            if (stream == null) {
+                Log.e("UPLOAD_DEBUG", "openInputStream retornou null para URI: $imageUri")
+                Toast.makeText(this, getString(R.string.erro_processar_imagem), Toast.LENGTH_SHORT).show()
+                return
+            }
 
-                if (original == null) {
-                    withContext(Dispatchers.Main) {
-                        imagePerfil?.alpha = 1.0f
-                        Toast.makeText(
-                            this@TelaRF09Configuracao,
-                            getString(R.string.erro_processar_imagem),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                    return@launch
-                }
+            imagePerfil?.alpha = 0.5f
 
-                // ── Passo 3: escala para exatamente 250×250 e descarta o original
-                val redimensionado = Bitmap.createScaledBitmap(original, 250, 250, true)
-                original.recycle()   // libera memória imediatamente
+            storageRef.putStream(stream)
+                .addOnSuccessListener {
+                    stream.close()
+                    Log.d("UPLOAD_DEBUG", "putStream concluído. Buscando downloadUrl...")
 
-                // ── Passo 4: comprime JPEG 80% e descarta o bitmap escalado
-                val baos = ByteArrayOutputStream()
-                redimensionado.compress(Bitmap.CompressFormat.JPEG, 80, baos)
-                redimensionado.recycle()
-                val bytes = baos.toByteArray()
-
-                // ── Passo 5: upload e atualização de UI na Main Thread ─────────
-                withContext(Dispatchers.Main) {
-                    if (isFinishing || isDestroyed) return@withContext
-                    usuarioRepository.uploadFotoPerfil(uid, bytes) { sucesso, url, erro ->
-                        if (isFinishing || isDestroyed) return@uploadFotoPerfil
-                        imagePerfil?.alpha = 1.0f
-                        if (sucesso && url != null) {
-                            imagePerfil?.load(url) {
-                                placeholder(R.drawable.user_placeholder)
-                                error(R.drawable.user_placeholder)
+                    storageRef.downloadUrl
+                        .addOnSuccessListener { downloadUri ->
+                            if (isFinishing || isDestroyed) return@addOnSuccessListener
+                            val url = downloadUri?.toString()
+                            if (url.isNullOrBlank()) {
+                                imagePerfil?.alpha = 1.0f
+                                Toast.makeText(this, getString(R.string.erro_processar_imagem), Toast.LENGTH_SHORT).show()
+                                return@addOnSuccessListener
                             }
+                            Log.d("UPLOAD_DEBUG", "downloadUrl obtida: $url")
+
+                            // Persiste fotoUrl no documento do usuário
+                            db.collection("usuarios").document(uid)
+                                .set(mapOf("fotoUrl" to url), SetOptions.merge())
+                                .addOnSuccessListener {
+                                    if (isFinishing || isDestroyed) return@addOnSuccessListener
+                                    imagePerfil?.alpha = 1.0f
+                                    imagePerfil?.load(url) {
+                                        crossfade(true)
+                                        placeholder(R.drawable.user_placeholder)
+                                        error(R.drawable.user_placeholder)
+                                    }
+                                    Toast.makeText(this, getString(R.string.msg_foto_atualizada), Toast.LENGTH_SHORT).show()
+                                }
+                                .addOnFailureListener { e ->
+                                    imagePerfil?.alpha = 1.0f
+                                    Log.e("UPLOAD_DEBUG", "Falha ao salvar fotoUrl no Firestore: ${e.message}")
+                                    Toast.makeText(this, getString(R.string.fmt_erro_ao_salvar, e.message), Toast.LENGTH_SHORT).show()
+                                }
+                        }
+                        .addOnFailureListener { e ->
+                            imagePerfil?.alpha = 1.0f
+                            // Causa real do "Object does not exist": arquivo não chegou ao bucket
+                            // ou as Security Rules do Storage bloquearam a gravação.
+                            Log.e("UPLOAD_DEBUG", "downloadUrl falhou [${e.javaClass.simpleName}]: ${e.message}")
                             Toast.makeText(
-                                this@TelaRF09Configuracao,
-                                "Foto atualizada com sucesso!",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        } else {
-                            Toast.makeText(
-                                this@TelaRF09Configuracao,
-                                "Erro ao enviar foto: $erro",
-                                Toast.LENGTH_SHORT
+                                this,
+                                "Erro ao obter URL [${e.javaClass.simpleName}]: ${e.message}",
+                                Toast.LENGTH_LONG
                             ).show()
                         }
-                    }
                 }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
+                .addOnFailureListener { e ->
+                    stream.close()
                     imagePerfil?.alpha = 1.0f
+                    // Exibe o tipo da exceção para distinguir SecurityException (Rules)
+                    // de IOException (rede) ou StorageException (bucket inexistente)
+                    Log.e("UPLOAD_DEBUG", "putStream falhou [${e.javaClass.simpleName}]: ${e.message}")
                     Toast.makeText(
-                        this@TelaRF09Configuracao,
-                        getString(R.string.erro_processar_imagem),
-                        Toast.LENGTH_SHORT
+                        this,
+                        "Erro ao enviar foto [${e.javaClass.simpleName}]: ${e.message}",
+                        Toast.LENGTH_LONG
                     ).show()
                 }
-            }
-        }
-    }
 
-    /**
-     * Calcula o maior inSampleSize potência-de-2 tal que a imagem decodificada
-     * ainda seja >= [reqW] × [reqH]. Mantém qualidade mínima para o scale final.
-     */
-    private fun calcularInSampleSize(
-        options: BitmapFactory.Options,
-        reqW: Int,
-        reqH: Int
-    ): Int {
-        val rawW = options.outWidth
-        val rawH = options.outHeight
-        var sampleSize = 1
-        if (rawW > reqW || rawH > reqH) {
-            val halfW = rawW / 2
-            val halfH = rawH / 2
-            while ((halfW / sampleSize) >= reqW && (halfH / sampleSize) >= reqH) {
-                sampleSize *= 2
-            }
+        } catch (e: Exception) {
+            imagePerfil?.alpha = 1.0f
+            Log.e("UPLOAD_DEBUG", "Exceção inesperada no upload [${e.javaClass.simpleName}]: ${e.message}")
+            Toast.makeText(this, getString(R.string.erro_processar_imagem), Toast.LENGTH_SHORT).show()
         }
-        return sampleSize
     }
 
     // ─── HELPERS ──────────────────────────────────────────────────────────────

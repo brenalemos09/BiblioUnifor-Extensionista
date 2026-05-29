@@ -250,8 +250,17 @@ class UsuarioRepository {
     }
 
     /**
-     * Upload de foto de perfil (Storage) + Atualização do campo fotoUrl (Firestore).
+     * Upload de foto de perfil via putBytes (Storage) + persistência de fotoUrl (Firestore).
      * RF08.4: Consolidado para uso no Dashboard e Configurações.
+     *
+     * O antigo `continueWithTask { throw task.exception!! }` podia lançar NullPointerException
+     * quando `task.exception` era null, e a chamada encadeada de `storageRef.downloadUrl`
+     * retornava "Object does not exist at location" se o upload havia falhado silenciosamente.
+     *
+     * A nova abordagem usa listeners separados:
+     *   putBytes → addOnSuccessListener → downloadUrl → addOnSuccessListener → Firestore set
+     * Cada etapa tem seu próprio addOnFailureListener com mensagem descritiva,
+     * garantindo que downloadUrl só seja chamado após confirmação do upload.
      */
     fun uploadFotoPerfil(
         uid: String,
@@ -259,26 +268,47 @@ class UsuarioRepository {
         colecao: String = "usuarios",
         onComplete: (Boolean, String?, String?) -> Unit
     ) {
+        // Guard: bytes vazios causariam upload inválido e erro confuso no Storage
+        if (uid.isBlank()) {
+            onComplete(false, null, "UID de usuário inválido.")
+            return
+        }
+        if (imageBytes.isEmpty()) {
+            onComplete(false, null, "Imagem inválida: nenhum byte para enviar.")
+            return
+        }
+
         val storageRef = storage.reference.child("profile_images/$uid.jpg")
 
-        storageRef.putBytes(imageBytes)
-            .continueWithTask { task ->
-                if (!task.isSuccessful) throw task.exception!!
-                storageRef.downloadUrl
-            }
-            .addOnSuccessListener { downloadUri ->
-                val url = downloadUri.toString()
-                db.collection(colecao).document(uid)
-                    .set(mapOf("fotoUrl" to url), SetOptions.merge())
-                    .addOnSuccessListener {
-                        onComplete(true, url, null)
-                    }
-                    .addOnFailureListener { e ->
-                        onComplete(false, null, e.message)
-                    }
-            }
-            .addOnFailureListener { e ->
-                onComplete(false, null, e.message)
-            }
+        try {
+            storageRef.putBytes(imageBytes)
+                .addOnSuccessListener {
+                    // Passo 2: só busca a URL de download após confirmar o upload
+                    storageRef.downloadUrl
+                        .addOnSuccessListener { downloadUri ->
+                            val url = downloadUri?.toString()
+                            if (url.isNullOrBlank()) {
+                                onComplete(false, null, "URL de download inválida após upload.")
+                                return@addOnSuccessListener
+                            }
+                            // Passo 3: persiste fotoUrl no Firestore do usuário
+                            db.collection(colecao).document(uid)
+                                .set(mapOf("fotoUrl" to url), SetOptions.merge())
+                                .addOnSuccessListener { onComplete(true, url, null) }
+                                .addOnFailureListener { e ->
+                                    // Upload OK, mas falhou ao salvar URL — informa parcialmente
+                                    onComplete(false, url, "Foto enviada, mas erro ao salvar URL: ${e.message}")
+                                }
+                        }
+                        .addOnFailureListener { e ->
+                            onComplete(false, null, "Erro ao obter URL de download: ${e.message ?: "erro desconhecido"}")
+                        }
+                }
+                .addOnFailureListener { e ->
+                    onComplete(false, null, e.message ?: "Erro ao enviar foto para o servidor.")
+                }
+        } catch (e: Exception) {
+            onComplete(false, null, "Exceção inesperada no upload: ${e.message}")
+        }
     }
 }

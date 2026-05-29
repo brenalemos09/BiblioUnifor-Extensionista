@@ -68,11 +68,11 @@ class NotificacaoAdapter(
         if (notif.coverUrl.isNotEmpty()) {
             holder.imgCapa.load(notif.coverUrl) {
                 crossfade(true)
-                placeholder(R.drawable.osda)
-                error(R.drawable.osda)
+                placeholder(R.drawable.ic_sem_capa)
+                error(R.drawable.ic_sem_capa)
             }
         } else {
-            holder.imgCapa.setImageResource(R.drawable.osda)
+            holder.imgCapa.setImageResource(R.drawable.ic_sem_capa)
         }
 
         // ── Textos ────────────────────────────────────────────────────────────

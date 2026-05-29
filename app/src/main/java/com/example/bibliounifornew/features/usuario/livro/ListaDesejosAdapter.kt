@@ -60,13 +60,13 @@ class ListaDesejosAdapter(
             holder.btnAlugar.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#9E9E9E")) // Cinza
         }
 
-        if (item.coverUrl.isNotEmpty()) {
-            holder.imgCapa.load(item.coverUrl) {
-                placeholder(R.drawable.osda)
-                error(R.drawable.osda)
-            }
-        } else {
-            holder.imgCapa.setImageResource(R.drawable.osda)
+        // Fallback neutro ic_sem_capa para URL vazia, nula ou com falha de rede.
+        // Cobre também o modo escuro — sem depender de osda.jpg no drawable-night.
+        holder.imgCapa.load(item.coverUrl.trim().ifEmpty { null }) {
+            crossfade(true)
+            placeholder(R.drawable.ic_sem_capa)
+            error(R.drawable.ic_sem_capa)
+            fallback(R.drawable.ic_sem_capa)
         }
 
         // Menu (3 pontos) e clique no card → abre detalhes do livro (RF12)

@@ -451,6 +451,10 @@
     <string name="label_alugado_adm">Alugado:</string>
     <string name="btn_ver_livro">Ver livro</string>
     <string name="btn_ver_usuario">Ver usuário</string>
+    <string name="btn_aprovar_aluguel">Aprovar Aluguel</string>
+    <string name="btn_receber_livro">Receber Livro</string>
+    <string name="msg_livro_recebido">Livro recebido e estoque atualizado com sucesso.</string>
+    <string name="msg_aluguel_aprovado_adm">Aluguel aprovado! Prazo: 14 dias.</string>
     <string name="desc_avatar_usuario_aluguel">Avatar do usuário</string>
     <string name="desc_capa_livro_aluguel">Capa do livro</string>
     <string name="msg_nenhum_aluguel_colecao">Nenhum aluguel encontrado.</string>

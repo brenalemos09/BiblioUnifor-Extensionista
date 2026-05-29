@@ -57,11 +57,11 @@ class StatusAluguelAdapter(
 
         if (item.coverUrl.isNotEmpty()) {
             holder.imgCapa.load(item.coverUrl) {
-                placeholder(R.drawable.osda)
-                error(R.drawable.osda)
+                placeholder(R.drawable.ic_sem_capa)
+                error(R.drawable.ic_sem_capa)
             }
         } else {
-            holder.imgCapa.setImageResource(R.drawable.osda)
+            holder.imgCapa.setImageResource(R.drawable.ic_sem_capa)
         }
 
         // ── Data de devolução ─────────────────────────────────────────────────

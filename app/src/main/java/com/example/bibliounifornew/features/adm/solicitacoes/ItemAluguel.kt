@@ -11,14 +11,15 @@ package com.example.bibliounifornew.features.adm.solicitacoes
  * nomeUsuario, tituloLivro, autorLivro, coverUrl.
  */
 data class ItemAluguel(
-    val docId       : String = "",
-    val uidAluno    : String = "",
-    val idLivro     : String = "",
-    val dataMs      : Long   = 0L,
-    val status      : String = "pendente",
-    val nomeUsuario : String = "Usuário",
-    val tituloLivro : String = "Título Indisponível",
-    val autorLivro  : String = "Autor Desconhecido",
-    /** URL da capa pré-carregada pelo join em "livros/{idLivro}" — evita N+1 no adapter. */
-    val coverUrl    : String = ""
+    val docId          : String = "",
+    val uidAluno       : String = "",
+    val idLivro        : String = "",
+    val dataMs         : Long   = 0L,
+    /** dataDevolucao: calculada no momento da aprovação (dataEmprestimo + 14 dias). */
+    val dataDevolucao  : Long   = 0L,
+    val status         : String = "pendente",
+    val nomeUsuario    : String = "Usuário",
+    val tituloLivro    : String = "Título Indisponível",
+    val autorLivro     : String = "Autor Desconhecido",
+    val coverUrl       : String = ""
 )
