@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Placeholder neutro para capas ausentes ou com URL quebrada.
+  Substitui o fallback em osda.jpg (capa do Tolkien) para que livros
+  sem capa própria não exibam a capa de outro título por engano.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Fundo cinza claro -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#E8E8E8" />
+        </shape>
+    </item>
+
+    <!-- Ícone de livro centralizado -->
+    <item
+        android:gravity="center"
+        android:width="48dp"
+        android:height="48dp"
+        android:drawable="@drawable/ic_menu_book" />
+
+</layer-list>
