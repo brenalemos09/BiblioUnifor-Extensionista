@@ -22,6 +22,9 @@ import com.example.bibliounifornew.features.adm.gerenciamento.TelaRF37InfoLivroA
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
@@ -174,55 +177,81 @@ class TelaRF36ListaAlugueisADM : AppCompatActivity() {
     }
 
     /**
-     * PERF-2: Mapeia documentos Firestore para [ItemAluguel] SEM N+1 queries.
+     * Hidratação de dados com JOIN paralelo por coroutine.
      *
-     * Prioridade de leitura para cada campo:
-     *   nomeUsuario → "nomeAluno" | "usuarioNome" | fallback "Usuário"
-     *   tituloLivro → "tituloLivro" | "titulo" | fallback "Livro Desconhecido"
-     *   autorLivro  → "autorLivro"  | "autor"  | fallback "Autor Desconhecido"
+     * Para cada documento de solicitacoes_emprestimo dispara em paralelo:
+     *   • db.collection("usuarios").document(uidAluno).get().await()
+     *     → preenche nomeUsuario e fotoUsuario
+     *   • db.collection("livros").document(idLivro).get().await()
+     *     → preenche tituloLivro, autorLivro e coverUrl
      *
-     * Documentos antigos (sem campos desnormalizados) exibem o fallback.
-     * Documentos novos (criados via GAP-5) já carregam os campos corretamente.
+     * Usa async/awaitAll dentro de coroutineScope — os 2 fetches por item
+     * rodam em paralelo, todos em Dispatchers.IO, sem tocar a Main Thread.
+     * Fallback: campos desnormalizados do próprio documento (docs antigos).
      */
-    private fun mapearDocumentos(
+    private suspend fun mapearDocumentos(
         documentos: List<com.google.firebase.firestore.DocumentSnapshot>
-    ): List<ItemAluguel> {
-        return documentos
-            .mapNotNull { doc ->
-                val docId        = doc.id
-                val uidAluno     = doc.getString("uidAluno")   ?: doc.getString("usuarioId") ?: ""
-                val idLivro      = doc.getString("idLivro")    ?: doc.getString("livroId")   ?: ""
-                val status       = doc.getString("status")     ?: "ativo"
-                val dataMs       = doc.getLong("dataSolicitacao") ?: doc.getLong("dataMs")   ?: 0L
+    ): List<ItemAluguel> = coroutineScope {
+        documentos.map { doc ->
+            async {
+                val uidAluno      = doc.getString("uidAluno")  ?: doc.getString("usuarioId") ?: ""
+                val idLivro       = doc.getString("idLivro")   ?: doc.getString("livroId")   ?: ""
+                val status        = doc.getString("status")    ?: "ativo"
+                val dataMs        = doc.getLong("dataSolicitacao") ?: doc.getLong("dataMs")   ?: 0L
                 val dataDevolucao = doc.getLong("dataDevolucao")
                     ?: doc.getLong("dataDevolucaoMs") ?: 0L
 
-                // ── Campos desnormalizados — zero joins adicionais ────────────
-                val nomeUsuario = doc.getString("nomeAluno")
-                    ?: doc.getString("usuarioNome")
+                // ── JOIN paralelo: usuario + livro em simultâneo ──────────────
+                val deferredUsuario = if (uidAluno.isNotEmpty()) {
+                    async {
+                        try { db.collection("usuarios").document(uidAluno).get().await() }
+                        catch (_: Exception) { null }
+                    }
+                } else null
+
+                val deferredLivro = if (idLivro.isNotEmpty()) {
+                    async {
+                        try { db.collection("livros").document(idLivro).get().await() }
+                        catch (_: Exception) { null }
+                    }
+                } else null
+
+                val docUsuario = deferredUsuario?.await()
+                val docLivro   = deferredLivro?.await()
+
+                // ── Resolve campos com fallback para desnormalizados ──────────
+                val nomeUsuario = docUsuario?.getString("nome")
+                    ?: doc.getString("nomeAluno") ?: doc.getString("usuarioNome")
                     ?: getString(R.string.placeholder_usuario)
 
-                val tituloLivro = doc.getString("tituloLivro")
-                    ?: doc.getString("titulo")
+                val fotoUsuario = docUsuario?.getString("fotoUrl") ?: ""
+
+                val tituloLivro = (docLivro?.getString("title") ?: docLivro?.getString("titulo"))
+                    ?: doc.getString("tituloLivro") ?: doc.getString("titulo")
                     ?: getString(R.string.sem_titulo)
 
-                val autorLivro  = doc.getString("autorLivro")
-                    ?: doc.getString("autor")
+                val autorLivro = (docLivro?.getString("author") ?: docLivro?.getString("autor"))
+                    ?: doc.getString("autorLivro") ?: doc.getString("autor")
                     ?: getString(R.string.sem_autor)
 
+                val coverUrl = docLivro?.getString("coverUrl")
+                    ?: doc.getString("coverUrl") ?: ""
+
                 ItemAluguel(
-                    docId         = docId,
+                    docId         = doc.id,
                     uidAluno      = uidAluno,
                     idLivro       = idLivro,
                     dataMs        = dataMs,
                     dataDevolucao = dataDevolucao,
                     status        = status,
                     nomeUsuario   = nomeUsuario,
+                    fotoUsuario   = fotoUsuario,
                     tituloLivro   = tituloLivro,
-                    autorLivro    = autorLivro
+                    autorLivro    = autorLivro,
+                    coverUrl      = coverUrl
                 )
             }
-            .sortedByDescending { it.dataMs }
+        }.awaitAll().sortedByDescending { it.dataMs }
     }
 
     // ─── FILTRAGEM ──────────────────────────────────────────────────────────

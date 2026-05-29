@@ -15,11 +15,13 @@ data class ItemAluguel(
     val uidAluno       : String = "",
     val idLivro        : String = "",
     val dataMs         : Long   = 0L,
-    /** dataDevolucao: calculada no momento da aprovação (dataEmprestimo + 14 dias). */
     val dataDevolucao  : Long   = 0L,
     val status         : String = "pendente",
     val nomeUsuario    : String = "Usuário",
+    /** fotoUsuario: URL do avatar do aluno, obtida via JOIN em usuarios/{uidAluno}. */
+    val fotoUsuario    : String = "",
     val tituloLivro    : String = "Título Indisponível",
     val autorLivro     : String = "Autor Desconhecido",
+    /** coverUrl: URL da capa do livro, obtida via JOIN em livros/{idLivro}. */
     val coverUrl       : String = ""
 )
