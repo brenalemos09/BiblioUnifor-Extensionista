@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Placeholder neutro para capas ausentes ou com URL quebrada.
-  Substitui o fallback hardcoded em osda.jpg (capa do Tolkien)
-  para que livros sem capa não exibam uma capa de outro livro.
+  Substitui o fallback em osda.jpg (capa do Tolkien) para que livros
+  sem capa própria não exibam a capa de outro título por engano.
 -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
 

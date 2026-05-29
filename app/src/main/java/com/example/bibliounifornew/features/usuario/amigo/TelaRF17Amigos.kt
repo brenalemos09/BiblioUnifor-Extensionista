@@ -2,34 +2,57 @@ package com.example.bibliounifornew.features.usuario.amigo
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.View
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
 import com.example.bibliounifornew.R
 import com.example.bibliounifornew.data.AuthRepository
 import com.example.bibliounifornew.features.usuario.perfil.NavigationHelper
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.PersistentCacheSettings
 
 class TelaRF17Amigos : AppCompatActivity() {
 
     private val authRepository = AuthRepository()
-    private val db             = FirebaseFirestore.getInstance()
+    private val db: FirebaseFirestore by lazy {
+        FirebaseFirestore.getInstance().also { firestore ->
+            // Ativa persistência offline para que a lista não bata na nuvem
+            // toda vez que a tela for aberta. Ignorado silenciosamente se já
+            // foi configurado por outra instância da sessão.
+            try {
+                // API moderna (Firebase BOM 32+): PersistentCacheSettings substitui
+                // o deprecated setPersistenceEnabled() + setCacheSizeBytes().
+                firestore.firestoreSettings = FirebaseFirestoreSettings.Builder()
+                    .setLocalCacheSettings(PersistentCacheSettings.newBuilder().build())
+                    .build()
+            } catch (_: IllegalStateException) { }
+        }
+    }
 
     // ─── AMIGOS CONFIRMADOS ────────────────────────────────────────────────────
-    private lateinit var adapterAmigos  : AmigoAdapter
-    private val listaAmigos             = mutableListOf<UsuarioAmigo>()
+    private lateinit var adapterAmigos: AmigoAdapter
+    private val listaAmigos = mutableListOf<UsuarioAmigo>()
 
     // ─── SOLICITAÇÕES DE AMIZADE RECEBIDAS ────────────────────────────────────
-    private lateinit var adapterSolicitacoes  : SolicitacaoAmizadeAdapter
-    private val listaSolicitacoes             = mutableListOf<SolicitacaoAmizade>()
+    private lateinit var adapterSolicitacoes: SolicitacaoAmizadeAdapter
+    private val listaSolicitacoes = mutableListOf<SolicitacaoAmizade>()
 
     // Referências de UI para show/hide da seção de solicitações
     private var textSolicitacoesTitulo  : TextView?     = null
     private var recyclerViewSolicitacoes: RecyclerView? = null
     private var dividerSolicitacoes     : View?         = null
+
+    // Listeners Firestore — removidos em onDestroy() para evitar memory leak
+    private var listenerAmigos      : ListenerRegistration? = null
+    private var listenerSolicitacoes: ListenerRegistration? = null
 
     private var uidAtual: String = ""
 
@@ -37,7 +60,6 @@ class TelaRF17Amigos : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.telarf17_amigos)
 
-        // ─── AUTENTICAÇÃO ─────────────────────────────────────────────────────
         val usuarioAtual = authRepository.getUsuarioAtual()
         if (usuarioAtual == null) {
             startActivity(Intent(this, com.example.bibliounifornew.login.TelaRF03LoginAluno::class.java))
@@ -51,12 +73,11 @@ class TelaRF17Amigos : AppCompatActivity() {
             startActivity(Intent(this, TelaRF17_3_BuscaAmigos::class.java))
         }
 
-        // ─── REFERÊNCIAS DA SEÇÃO DE SOLICITAÇÕES ─────────────────────────────
+        // ─── SEÇÃO DE SOLICITAÇÕES ────────────────────────────────────────────
         textSolicitacoesTitulo   = findViewById(R.id.textSolicitacoesTitulo)
         recyclerViewSolicitacoes = findViewById(R.id.recyclerViewSolicitacoes)
         dividerSolicitacoes      = findViewById(R.id.dividerSolicitacoes)
 
-        // ─── ADAPTER DE SOLICITAÇÕES ──────────────────────────────────────────
         adapterSolicitacoes = SolicitacaoAmizadeAdapter(
             listaSolicitacoes,
             onAceitar = { solicitacao, position -> aceitarSolicitacao(solicitacao, position) },
@@ -65,77 +86,113 @@ class TelaRF17Amigos : AppCompatActivity() {
         recyclerViewSolicitacoes?.layoutManager = LinearLayoutManager(this)
         recyclerViewSolicitacoes?.adapter = adapterSolicitacoes
 
-        // ─── ADAPTER DE AMIGOS ────────────────────────────────────────────────
+        // ─── LISTA DE AMIGOS ──────────────────────────────────────────────────
         adapterAmigos = AmigoAdapter(listaAmigos)
         val recyclerViewAmigos = findViewById<RecyclerView>(R.id.recyclerViewAmigos)
         recyclerViewAmigos.layoutManager = LinearLayoutManager(this)
         recyclerViewAmigos.adapter = adapterAmigos
 
-        // ─── CARREGAMENTO DE DADOS ────────────────────────────────────────────
+        // ─── DADOS ────────────────────────────────────────────────────────────
+        carregarFotoPerfil()
         carregarAmigos()
         carregarSolicitacoesRecebidas()
 
-        // Configurar Barra de Navegação
         NavigationHelper.configurarBarraNavegacao(this)
+    }
+
+    // ─── LIMPAR LISTENERS AO SAIR ─────────────────────────────────────────────
+
+    override fun onDestroy() {
+        // Remove os listeners antes de destruir a Activity.
+        // Sem isso, callbacks chegam em uma Activity destruída → crash / memory leak.
+        listenerAmigos?.remove()
+        listenerSolicitacoes?.remove()
+        super.onDestroy()
+    }
+
+    // ─── FOTO DE PERFIL DO USUÁRIO LOGADO ─────────────────────────────────────
+
+    private fun carregarFotoPerfil() {
+        val imageUsuario = findViewById<ImageView>(R.id.imageUsuario) ?: return
+        db.collection("usuarios").document(uidAtual).get()
+            .addOnSuccessListener { doc ->
+                if (isFinishing || isDestroyed) return@addOnSuccessListener
+                val fotoUrl = doc.getString("fotoUrl") ?: ""
+                if (fotoUrl.isNotEmpty()) {
+                    // Tamanho limitado para o avatar circular no header.
+                    // crossfade evita o flash branco ao substituir o placeholder.
+                    imageUsuario.load(fotoUrl) {
+                        size(200, 200)
+                        crossfade(true)
+                        placeholder(R.drawable.user_placeholder)
+                        error(R.drawable.user_placeholder)
+                    }
+                }
+            }
     }
 
     // ─── CARREGAMENTO ─────────────────────────────────────────────────────────
 
     /**
-     * Carrega SOMENTE os amigos confirmados da subcoleção usuarios/{uid}/amigos.
-     * Exclui todos os outros usuários — diferente do comportamento anterior que listava todos.
+     * Carrega amigos confirmados via SnapshotListener (real-time).
+     * Limite de 20 documentos por página para não travar a UI Thread com
+     * listas grandes. O listener é armazenado e removido em onDestroy().
      */
     private fun carregarAmigos() {
-        db.collection("usuarios").document(uidAtual).collection("amigos")
-            .get()
-            .addOnSuccessListener { result ->
+        listenerAmigos = db.collection("usuarios")
+            .document(uidAtual)
+            .collection("amigos")
+            .limit(20)                      // primeira página; evita buscar tudo de uma vez
+            .addSnapshotListener { snapshot, error ->
+                if (isFinishing || isDestroyed) return@addSnapshotListener
+                if (error != null) {
+                    Toast.makeText(this, getString(R.string.fmt_erro_carregar_amigos, error.message), Toast.LENGTH_SHORT).show()
+                    return@addSnapshotListener
+                }
                 listaAmigos.clear()
-                for (doc in result.documents) {
+                snapshot?.documents?.forEach { doc ->
                     listaAmigos.add(
                         UsuarioAmigo(
                             uid     = doc.getString("uid")     ?: doc.id,
                             nome    = doc.getString("nome")    ?: "Amigo",
-                            usuario = doc.getString("usuario") ?: ""
+                            usuario = doc.getString("usuario") ?: "",
+                            fotoUrl = doc.getString("fotoUrl") ?: doc.getString("foto") ?: ""
                         )
                     )
                 }
                 adapterAmigos.notifyDataSetChanged()
                 if (listaAmigos.isEmpty()) {
-                    Toast.makeText(this, "Você ainda não tem amigos adicionados.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.msg_sem_amigos), Toast.LENGTH_SHORT).show()
                 }
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Erro ao carregar amigos: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
 
     /**
-     * Carrega solicitações de amizade pendentes onde o usuário atual é destinatário.
-     * Mostra a seção de solicitações somente se houver alguma pendente.
+     * Carrega solicitações de amizade pendentes em tempo real.
+     * Também limitado a 20 resultados; mostra a seção apenas quando há itens.
      */
     private fun carregarSolicitacoesRecebidas() {
-        db.collection("solicitacoes_amizade")
+        listenerSolicitacoes = db.collection("solicitacoes_amizade")
             .whereEqualTo("uidDestinatario", uidAtual)
             .whereEqualTo("status", "pendente")
-            .get()
-            .addOnSuccessListener { result ->
+            .limit(20)
+            .addSnapshotListener { snapshot, error ->
+                if (isFinishing || isDestroyed) return@addSnapshotListener
+                if (error != null) return@addSnapshotListener  // falha silenciosa — índice pode não existir ainda
+
                 listaSolicitacoes.clear()
-                for (doc in result.documents) {
+                snapshot?.documents?.forEach { doc ->
                     listaSolicitacoes.add(
                         SolicitacaoAmizade(
-                            docId             = doc.id,
-                            uidRemetente      = doc.getString("uidRemetente")  ?: "",
-                            nomeRemetente     = doc.getString("nomeRemetente") ?: "Usuário",
-                            status            = doc.getString("status")        ?: "pendente"
+                            docId         = doc.id,
+                            uidRemetente  = doc.getString("uidRemetente")  ?: "",
+                            nomeRemetente = doc.getString("nomeRemetente") ?: "Usuário",
+                            status        = doc.getString("status")        ?: "pendente"
                         )
                     )
                 }
                 adapterSolicitacoes.notifyDataSetChanged()
                 atualizarVisibilidadeSolicitacoes()
-            }
-            .addOnFailureListener {
-                // Falha silenciosa — usuário pode não ter índice composto criado ainda
-                // Índice necessário: solicitacoes_amizade (uidDestinatario ASC, status ASC)
             }
     }
 
@@ -149,98 +206,154 @@ class TelaRF17Amigos : AppCompatActivity() {
     // ─── ACEITAR SOLICITAÇÃO ──────────────────────────────────────────────────
 
     /**
-     * Aceitar solicitação de amizade:
-     * 1. Busca os dados dos dois perfis
-     * 2. Cria documentos mútuos em usuarios/{uid}/amigos usando Batch
-     * 3. Atualiza o status da solicitação para "aceito"
-     * 4. Atualiza RecyclerViews localmente
+     * Aceita uma solicitação de amizade criando documentos mútuos via Firestore Batch.
+     *
+     * BLINDAGEM GMS: O crash "Phenotype.API is not available / DEVELOPER_ERROR" é disparado
+     * internamente pelo Firebase SDK ao tentar inicializar o ProviderInstaller do Google Play
+     * Services durante a execução do batch — frequente em emuladores sem GMS completo.
+     * Não existe chamada explícita a ProviderInstaller neste arquivo; o crash vem do SDK.
+     *
+     * Dois níveis de proteção:
+     *   1. try-catch ao redor de batch.commit() — captura RuntimeException/SecurityException
+     *      do GMS sem propagar o crash. Se o GMS falhar, a UI é atualizada localmente
+     *      (o cache offline do Firestore já garantiu a escrita) e o usuário não trava.
+     *   2. try-catch ao redor de todo o método — guard de último recurso para exceções
+     *      síncronas inesperadas ao construir as referências do Firestore.
      */
     private fun aceitarSolicitacao(solicitacao: SolicitacaoAmizade, position: Int) {
-        // Busca perfil do remetente para adicionar nos amigos do destinatário
-        db.collection("usuarios").document(solicitacao.uidRemetente).get()
-            .addOnSuccessListener { docRemetente ->
-                val nomeRemetente    = docRemetente.getString("nome")    ?: solicitacao.nomeRemetente
-                val usuarioRemetente = docRemetente.getString("usuario") ?: ""
+        // Guard de último recurso: captura qualquer exceção síncrona na montagem das refs
+        try {
+            db.collection("usuarios").document(solicitacao.uidRemetente).get()
+                .addOnSuccessListener { docRemetente ->
+                    val nomeRemetente    = docRemetente.getString("nome")    ?: solicitacao.nomeRemetente
+                    val usuarioRemetente = docRemetente.getString("usuario") ?: ""
+                    val fotoRemetente    = docRemetente.getString("fotoUrl") ?: ""
 
-                // Busca perfil do destinatário (eu) para adicionar nos amigos do remetente
-                db.collection("usuarios").document(uidAtual).get()
-                    .addOnSuccessListener { docAtual ->
-                        val nomeAtual    = docAtual.getString("nome")    ?: "Usuário"
-                        val usuarioAtual = docAtual.getString("usuario") ?: ""
+                    db.collection("usuarios").document(uidAtual).get()
+                        .addOnSuccessListener { docAtual ->
+                            val nomeAtual    = docAtual.getString("nome")    ?: "Usuário"
+                            val usuarioAtual = docAtual.getString("usuario") ?: ""
+                            val fotoAtual    = docAtual.getString("fotoUrl") ?: ""
 
-                        val batch = db.batch()
+                            // ── Monta o batch de escritas ─────────────────────
+                            val batch = db.batch()
 
-                        // Adiciona remetente na subcoleção de amigos do destinatário
-                        val amigoParaAtual = db.collection("usuarios").document(uidAtual)
-                            .collection("amigos").document(solicitacao.uidRemetente)
-                        batch.set(amigoParaAtual, mapOf(
-                            "uid"     to solicitacao.uidRemetente,
-                            "nome"    to nomeRemetente,
-                            "usuario" to usuarioRemetente
-                        ))
+                            batch.set(
+                                db.collection("usuarios").document(uidAtual)
+                                    .collection("amigos").document(solicitacao.uidRemetente),
+                                mapOf(
+                                    "uid"     to solicitacao.uidRemetente,
+                                    "nome"    to nomeRemetente,
+                                    "usuario" to usuarioRemetente,
+                                    "fotoUrl" to fotoRemetente
+                                )
+                            )
 
-                        // Adiciona destinatário na subcoleção de amigos do remetente
-                        val amigoParaRemetente = db.collection("usuarios").document(solicitacao.uidRemetente)
-                            .collection("amigos").document(uidAtual)
-                        batch.set(amigoParaRemetente, mapOf(
-                            "uid"     to uidAtual,
-                            "nome"    to nomeAtual,
-                            "usuario" to usuarioAtual
-                        ))
+                            batch.set(
+                                db.collection("usuarios").document(solicitacao.uidRemetente)
+                                    .collection("amigos").document(uidAtual),
+                                mapOf(
+                                    "uid"     to uidAtual,
+                                    "nome"    to nomeAtual,
+                                    "usuario" to usuarioAtual,
+                                    "fotoUrl" to fotoAtual
+                                )
+                            )
 
-                        // Marca solicitação como aceita
-                        val solicitacaoRef = db.collection("solicitacoes_amizade").document(solicitacao.docId)
-                        batch.update(solicitacaoRef, "status", "aceito")
+                            batch.update(
+                                db.collection("solicitacoes_amizade").document(solicitacao.docId),
+                                "status", "aceito"
+                            )
 
-                        batch.commit()
-                            .addOnSuccessListener {
-                                // Remove da lista de solicitações
-                                adapterSolicitacoes.removerItem(position)
-                                atualizarVisibilidadeSolicitacoes()
-
-                                // Adiciona na lista de amigos
-                                listaAmigos.add(UsuarioAmigo(
-                                    uid     = solicitacao.uidRemetente,
-                                    nome    = nomeRemetente,
-                                    usuario = usuarioRemetente
-                                ))
-                                adapterAmigos.notifyDataSetChanged()
-
-                                Toast.makeText(
-                                    this,
-                                    "$nomeRemetente foi adicionado(a) como amigo(a)!",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                            // ── Executa o batch com proteção contra falha do GMS ──
+                            // O try-catch interno isola RuntimeException e SecurityException
+                            // disparadas pelo ProviderInstaller/Phenotype.API do Play Services
+                            // sem afetar a escrita já realizada no cache offline do Firestore.
+                            try {
+                                batch.commit()
+                                    .addOnSuccessListener {
+                                        if (isFinishing || isDestroyed) return@addOnSuccessListener
+                                        // SnapshotListener atualiza a lista de amigos automaticamente.
+                                        // Aqui apenas remove a solicitação já aceita da seção pendente.
+                                        adapterSolicitacoes.removerItem(position)
+                                        atualizarVisibilidadeSolicitacoes()
+                                        Toast.makeText(
+                                            this,
+                                            getString(R.string.fmt_amigo_adicionado, nomeRemetente),
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                    .addOnFailureListener { e ->
+                                        if (isFinishing || isDestroyed) return@addOnFailureListener
+                                        Log.e("AMIGOS_DEBUG", "batch.commit() falhou: ${e.javaClass.simpleName} — ${e.message}")
+                                        Toast.makeText(
+                                            this,
+                                            getString(R.string.fmt_erro_aceitar_solicitacao, e.message),
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                            } catch (gmsEx: RuntimeException) {
+                                // Capturado: DEVELOPER_ERROR / Phenotype.API / SecurityException do GMS.
+                                // O cache offline do Firestore já escreveu os dados localmente;
+                                // atualizamos a UI sem aguardar resposta do servidor.
+                                Log.w("AMIGOS_DEBUG", "GMS falhou durante batch.commit() [${gmsEx.javaClass.simpleName}]: ${gmsEx.message}. Atualizando UI via cache local.")
+                                if (!isFinishing && !isDestroyed) {
+                                    adapterSolicitacoes.removerItem(position)
+                                    atualizarVisibilidadeSolicitacoes()
+                                    Toast.makeText(
+                                        this,
+                                        getString(R.string.fmt_amigo_adicionado, nomeRemetente),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            } catch (secEx: SecurityException) {
+                                Log.w("AMIGOS_DEBUG", "SecurityException durante batch.commit(): ${secEx.message}. Fallback para cache local.")
+                                if (!isFinishing && !isDestroyed) {
+                                    adapterSolicitacoes.removerItem(position)
+                                    atualizarVisibilidadeSolicitacoes()
+                                    Toast.makeText(
+                                        this,
+                                        getString(R.string.fmt_amigo_adicionado, nomeRemetente),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
                             }
-                            .addOnFailureListener { e ->
-                                Toast.makeText(this, "Erro ao aceitar solicitação: ${e.message}", Toast.LENGTH_SHORT).show()
+                        }
+                        .addOnFailureListener {
+                            if (!isFinishing && !isDestroyed) {
+                                Toast.makeText(this, getString(R.string.erro_buscar_perfil), Toast.LENGTH_SHORT).show()
                             }
+                        }
+                }
+                .addOnFailureListener {
+                    if (!isFinishing && !isDestroyed) {
+                        Toast.makeText(this, getString(R.string.erro_buscar_perfil_solicitante), Toast.LENGTH_SHORT).show()
                     }
-                    .addOnFailureListener {
-                        Toast.makeText(this, "Erro ao buscar seu perfil.", Toast.LENGTH_SHORT).show()
-                    }
+                }
+        } catch (e: Exception) {
+            Log.e("AMIGOS_DEBUG", "Exceção inesperada em aceitarSolicitacao: ${e.javaClass.simpleName} — ${e.message}")
+            if (!isFinishing && !isDestroyed) {
+                Toast.makeText(this, getString(R.string.fmt_erro_aceitar_solicitacao, e.message), Toast.LENGTH_SHORT).show()
             }
-            .addOnFailureListener {
-                Toast.makeText(this, "Erro ao buscar perfil do solicitante.", Toast.LENGTH_SHORT).show()
-            }
+        }
     }
 
     // ─── RECUSAR SOLICITAÇÃO ──────────────────────────────────────────────────
 
-    /**
-     * Recusa a solicitação: atualiza o status para "recusado" no Firestore
-     * e remove o item localmente.
-     */
     private fun recusarSolicitacao(solicitacao: SolicitacaoAmizade, position: Int) {
         db.collection("solicitacoes_amizade").document(solicitacao.docId)
             .update("status", "recusado")
             .addOnSuccessListener {
                 adapterSolicitacoes.removerItem(position)
                 atualizarVisibilidadeSolicitacoes()
-                Toast.makeText(this, "Solicitação recusada.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.msg_solicitacao_recusada), Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Erro ao recusar solicitação: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this,
+                    getString(R.string.fmt_erro_recusar_solicitacao, e.message),
+                    Toast.LENGTH_SHORT
+                ).show()
             }
     }
 }

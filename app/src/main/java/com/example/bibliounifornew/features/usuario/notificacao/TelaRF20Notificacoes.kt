@@ -14,8 +14,9 @@ import coil.load
 import com.example.bibliounifornew.R
 import com.example.bibliounifornew.data.AuthRepository
 import com.example.bibliounifornew.data.UsuarioRepository
-import com.example.bibliounifornew.features.usuario.livro.TelaLivroActivity
+import com.example.bibliounifornew.features.usuario.livro.TelaRF12TelaDoLivro
 import com.example.bibliounifornew.features.usuario.perfil.NavigationHelper
+import com.example.bibliounifornew.features.usuario.solicitacao.TelaRF18StatusAluguel
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 
@@ -101,12 +102,30 @@ class TelaRF20Notificacoes : AppCompatActivity() {
         adapter = NotificacaoAdapter(
             lista        = mutableListOf(),
             onNotifClick = { notif ->
-                // Se a notificação tem livroId → navega direto para o livro
-                if (notif.livroId.isNotEmpty()) {
-                    startActivity(
-                        Intent(this, TelaLivroActivity::class.java)
-                            .putExtra("LIVRO_ID", notif.livroId)
+                // Routing por conteúdo/tipo — garante FLAG_ACTIVITY_SINGLE_TOP
+                // em todos os caminhos para evitar duplicação de instâncias.
+                val texto = "${notif.titulo} ${notif.descricao}".lowercase()
+                val isAluguel = texto.contains("aluguel")
+                    || texto.contains("aprovado")
+                    || texto.contains("empréstimo")
+                    || texto.contains("emprestimo")
+                    || texto.contains("solicitação")
+                    || texto.contains("solicitacao")
+                    || texto.contains("recebido")
+                    || texto.contains("devolução")
+                    || texto.contains("devolucao")
+
+                when {
+                    isAluguel -> startActivity(
+                        Intent(this, TelaRF18StatusAluguel::class.java)
+                            .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
                     )
+                    notif.livroId.isNotEmpty() -> startActivity(
+                        Intent(this, TelaRF12TelaDoLivro::class.java)
+                            .putExtra("LIVRO_ID", notif.livroId)
+                            .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    )
+                    // Notificação genérica sem destino concreto — nenhuma navegação
                 }
             }
         )

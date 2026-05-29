@@ -71,13 +71,19 @@ class TelaRF15MinhaLivrariaActivity : AppCompatActivity() {
             .addOnSuccessListener { result ->
                 listaLivraria.clear()
                 for (doc in result) {
-                    val livroId = doc.getString("livroId") ?: ""
-                    val titulo = doc.getString("titulo") ?: "Título Indisponível"
-                    val autor = doc.getString("autor") ?: "Autor Desconhecido"
+                    val livroId      = doc.getString("livroId")      ?: ""
+                    val titulo       = doc.getString("titulo")       ?: "Título Indisponível"
+                    val autor        = doc.getString("autor")        ?: "Autor Desconhecido"
                     val statusLeitura = doc.getString("statusLeitura") ?: "Não Lido"
+                    val coverUrl     = doc.getString("coverUrl")     ?: doc.getString("imagemUrl") ?: ""
 
-                    // Instancia o objeto dinâmico do item
-                    listaLivraria.add(ItemLivraria(livroId, titulo, autor, statusLeitura))
+                    listaLivraria.add(ItemLivraria(
+                        livroId       = livroId,
+                        titulo        = titulo,
+                        autor         = autor,
+                        statusLeitura = statusLeitura,
+                        coverUrl      = coverUrl
+                    ))
                 }
                 adapter.notifyDataSetChanged()
 

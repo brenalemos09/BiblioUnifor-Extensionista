@@ -232,14 +232,13 @@ class TelaRF31Solicitacoes : AppCompatActivity() {
                 getString(R.string.label_solicitado_em, sdf.format(Date(item.dataSolicitacao)))
             else getString(R.string.label_solicitado_em, "—")
 
+        // BUG-4B FIX: usa ic_sem_capa como placeholder/fallback — sem Tolkien estático
         val imgCapa = dialog.findViewById<ImageView>(R.id.imageLivroSolicitado)
-        if (item.coverUrl.isNotBlank()) {
-            imgCapa?.load(item.coverUrl) {
-                placeholder(R.drawable.osda)
-                error(R.drawable.osda)
-            }
-        } else {
-            imgCapa?.setImageResource(R.drawable.osda)
+        imgCapa?.load(item.coverUrl.ifEmpty { null }) {
+            crossfade(true)
+            placeholder(R.drawable.ic_sem_capa)
+            error(R.drawable.ic_sem_capa)
+            fallback(R.drawable.ic_sem_capa)
         }
 
         // ── Campos de link ─────────────────────────────────────────────────────

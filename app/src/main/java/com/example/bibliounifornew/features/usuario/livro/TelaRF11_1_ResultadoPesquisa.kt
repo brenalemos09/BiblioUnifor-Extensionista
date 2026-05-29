@@ -1,7 +1,7 @@
 package com.example.bibliounifornew.features.usuario.livro
 
-import android.app.Dialog
 import android.content.Intent
+import android.app.Dialog
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
@@ -18,7 +18,6 @@ import com.example.bibliounifornew.R
 import com.example.bibliounifornew.data.BibliotecaOnlineRepository
 import com.example.bibliounifornew.data.EntidadeLivro
 import com.example.bibliounifornew.features.usuario.solicitacao.TelaRF18StatusAluguel
-import com.example.bibliounifornew.features.usuario.solicitacao.TelaRF19SolicitacoesTermosCondicoes
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -26,6 +25,8 @@ import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 class TelaRF11_1_ResultadoPesquisa : AppCompatActivity() {
 
@@ -47,9 +48,12 @@ class TelaRF11_1_ResultadoPesquisa : AppCompatActivity() {
         textResultado.text = "Resultado: \"${termoPesquisa.ifEmpty { "Filtros aplicados" }}\""
 
         configurarRecyclerView()
+
+        // Realiza a busca combinada
         realizarBusca(termoPesquisa, filtroTitulo, filtroAutor, filtroCat, filtroDisp)
 
-        // Busca complementar na nuvem (Google Books API) para enriquecer o acervo local
+        // Se tem um termo, busca na nuvem. 
+        // Se não tem termo mas tem uma categoria específica, busca livros dessa categoria na nuvem.
         if (termoPesquisa.isNotEmpty()) {
             buscarNaNuvem(termoPesquisa)
         } else {
@@ -59,8 +63,6 @@ class TelaRF11_1_ResultadoPesquisa : AppCompatActivity() {
             }
         }
     }
-
-    // ─── RECYCLER ──────────────────────────────────────────────────────────────
 
     private fun configurarRecyclerView() {
         recyclerView = findViewById(R.id.recyclerViewResultados)
@@ -75,27 +77,11 @@ class TelaRF11_1_ResultadoPesquisa : AppCompatActivity() {
                 )
             },
             onSuaLivraria = { livro -> adicionarSuaLivraria(livro) },
-            // Aluguel passa obrigatoriamente pelos Termos e Condições (RF19)
-            onAlugarLivro = { livro -> irParaTermosAluguel(livro) }
+            onAlugarLivro = { livro -> exibirPopupAlugar(livro) }
         )
 
         recyclerView.adapter = adapter
     }
-
-    // ─── ALUGUEL → RF19 ────────────────────────────────────────────────────────
-
-    private fun irParaTermosAluguel(livro: EntidadeLivro) {
-        startActivity(
-            Intent(this, TelaRF19SolicitacoesTermosCondicoes::class.java).apply {
-                putExtra("TIPO_MIDIA", "Aluguel")
-                putExtra("LIVRO_ID",   livro.id)
-                putExtra("TITULO",     livro.title)
-                putExtra("AUTOR",      livro.author)
-            }
-        )
-    }
-
-    // ─── LIVRARIA ──────────────────────────────────────────────────────────────
 
     private fun adicionarSuaLivraria(livro: EntidadeLivro) {
         if (isFinishing || isDestroyed) return
@@ -119,10 +105,10 @@ class TelaRF11_1_ResultadoPesquisa : AppCompatActivity() {
             .set(dados, SetOptions.merge())
             .addOnSuccessListener {
                 if (!isFinishing && !isDestroyed) {
-                    Snackbar.make(recyclerView, "Livro adicionado à sua livraria.", Snackbar.LENGTH_LONG)
-                        .setBackgroundTint(Color.parseColor("#444444"))
-                        .setTextColor(Color.WHITE)
-                        .show()
+                    val snackbar = Snackbar.make(recyclerView, "Livro adicionado à sua livraria.", Snackbar.LENGTH_LONG)
+                    snackbar.setBackgroundTint(Color.parseColor("#444444"))
+                    snackbar.setTextColor(Color.WHITE)
+                    snackbar.show()
                 }
             }
             .addOnFailureListener {
@@ -194,7 +180,7 @@ class TelaRF11_1_ResultadoPesquisa : AppCompatActivity() {
 
             findViewById<Button>(R.id.buttonVerMeusLivros)?.setOnClickListener {
                 dismiss()
-                val intent = Intent(this@TelaRF11_1_ResultadoPesquisa, TelaRF18StatusAluguel::class.java)
+                val intent = android.content.Intent(this@TelaRF11_1_ResultadoPesquisa, TelaRF18StatusAluguel::class.java)
                 startActivity(intent)
                 finish()
             }
@@ -208,73 +194,47 @@ class TelaRF11_1_ResultadoPesquisa : AppCompatActivity() {
         super.onDestroy()
     }
 
-    // ─── BUSCA COM ISBN-AWARENESS ──────────────────────────────────────────────
-
-    /**
-     * Remove hífens/espaços de um possível ISBN para comparação.
-     */
-    private fun normalizarIsbn(s: String) = s.replace("-", "").replace(" ", "")
-
-    /**
-     * Retorna true se o termo (após normalização) representa um ISBN-10:
-     * 10 caracteres, todos dígitos (com X maiúsculo/minúsculo permitido na última posição).
-     */
-    private fun isIsbn10(s: String): Boolean {
-        val n = normalizarIsbn(s)
-        if (n.length != 10) return false
-        return n.dropLast(1).all { it.isDigit() } &&
-               (n.last().isDigit() || n.last().uppercaseChar() == 'X')
-    }
-
-    /**
-     * Retorna true se o termo (após normalização) representa um ISBN-13:
-     * 13 caracteres, todos dígitos.
-     */
-    private fun isIsbn13(s: String): Boolean {
-        val n = normalizarIsbn(s)
-        return n.length == 13 && n.all { it.isDigit() }
-    }
-
     private fun realizarBusca(
         termo: String,
         fTitulo: String = "",
-        fAutor: String  = "",
-        fCat: String    = "",
-        fDisp: String   = "Todos"
+        fAutor: String = "",
+        fCat: String = "",
+        fDisp: String = "Todos"
     ) {
-        val firestore  = FirebaseFirestore.getInstance()
-        val termoTrim  = termo.trim()
-        val termoLower = termoTrim.lowercase()
+        // getString() precisa da Main thread — captura ANTES de entrar na coroutine.
+        val termoLower = termo.lowercase().trim()
         val titLower   = fTitulo.lowercase().trim()
         val autLower   = fAutor.lowercase().trim()
 
-        // Detecta o modo de busca antes de consultar o Firestore
-        val buscaIsbn10 = isIsbn10(termoTrim)
-        val buscaIsbn13 = isIsbn13(termoTrim)
-        val isbnNorm    = normalizarIsbn(termoTrim).lowercase()
-
-        val catTodos = try { getString(R.string.categoria_todos) } catch (e: Exception) { "Todas as Categorias" }
+        val catTodos = try { getString(R.string.categoria_todos) } catch (_: Exception) { "Todas as Categorias" }
         val filtroCatTratado = if (fCat.isEmpty()) catTodos else fCat
-        val ignorarCat = filtroCatTratado.equals(catTodos, ignoreCase = true) ||
-                         filtroCatTratado.equals("Todas as Categorias", ignoreCase = true) ||
-                         filtroCatTratado.equals("Todas", ignoreCase = true)
+        val ignorarCat = filtroCatTratado.equals(catTodos, ignoreCase = true)
+            || filtroCatTratado.equals("Todas as Categorias", ignoreCase = true)
+            || filtroCatTratado.equals("Todas", ignoreCase = true)
 
-        firestore.collection("livros")
-            .get()
-            .addOnSuccessListener { result ->
-                if (isFinishing || isDestroyed) return@addOnSuccessListener
+        // Issue #7 FIX: move o Firestore get() + todo o loop de filtragem para IO.
+        // O addOnSuccessListener rodava na Main thread — com 150+ docs e comparações
+        // de sinônimos isso bloqueava a UI e fazia os filtros parecerem inoperantes.
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val result = FirebaseFirestore.getInstance()
+                    .collection("livros")
+                    .get()
+                    .await()
+
+                Log.d("BUSCA", "Firestore retornou ${result.size()} docs. Termo: '$termoLower', Cat: '$filtroCatTratado', Disp: '$fDisp'")
+
                 val listaDeLivros = mutableListOf<EntidadeLivro>()
-                Log.d("BUSCA", "Firestore retornou ${result.size()} documentos. Termo: '$termoTrim'")
 
                 for (document in result) {
                     try {
-                        val id       = document.id
-                        val title    = (document.getString("title")    ?: document.getString("titulo")    ?: "").trim()
-                        val author   = (document.getString("author")   ?: document.getString("autor")     ?: "").trim()
-                        val category = (document.getString("category") ?: document.getString("categoria") ?: "Outros").trim()
-                        val coverUrl = document.getString("coverUrl") ?: ""
-                        val isbn10   = normalizarIsbn(document.getString("isbn10") ?: document.getString("isbn_10") ?: "")
-                        val isbn13   = normalizarIsbn(document.getString("isbn13") ?: document.getString("isbn_13") ?: "")
+                        val id          = document.id
+                        val title       = (document.getString("title")    ?: document.getString("titulo")    ?: "").trim()
+                        val author      = (document.getString("author")   ?: document.getString("autor")     ?: "").trim()
+                        val category    = (document.getString("category") ?: document.getString("categoria") ?: "Outros").trim()
+                        val coverUrl    = document.getString("coverUrl")    ?: ""
+                        val isbn10      = document.getString("isbn10")      ?: ""
+                        val isbn13      = document.getString("isbn13")      ?: ""
                         val publishDate = document.getString("publishDate") ?: document.getString("data") ?: ""
 
                         val stockVal = document.get("estoque") ?: document.get("quantidade") ?: document.get("stock")
@@ -284,33 +244,97 @@ class TelaRF11_1_ResultadoPesquisa : AppCompatActivity() {
                             is String -> stockVal.toLongOrNull()
                             else      -> null
                         }
-                        val isAvailable = document.getBoolean("isAvailable") ?: (stock?.let { it > 0 } ?: true)
+                        val isAvailable = document.getBoolean("isAvailable")
+                            ?: (if (stock != null) stock > 0 else true)
 
-                        // ── MATCH PRINCIPAL ────────────────────────────────────
-                        // Se o termo for ISBN válido → match EXATO no campo correspondente.
-                        // Se for texto → match de substring em título ou autor.
-                        val matchTermo = when {
-                            termoTrim.isEmpty() -> true
-                            buscaIsbn10 -> isbn10.equals(isbnNorm, ignoreCase = true)
-                            buscaIsbn13 -> isbn13.equals(isbnNorm, ignoreCase = true)
-                            else -> title.lowercase().contains(termoLower) ||
-                                    author.lowercase().contains(termoLower)
-                        }
+                        // ── Cadeia AND cumulativa (Issue #7) ──────────────────────
+                        // 1. Termo principal (título, autor ou ISBN)
+                        val matchTermo = termoLower.isEmpty()
+                            || title.lowercase().contains(termoLower)
+                            || author.lowercase().contains(termoLower)
+                            || isbn10.lowercase().contains(termoLower)
+                            || isbn13.lowercase().contains(termoLower)
 
-                        // ── FILTROS ADICIONAIS ─────────────────────────────────
+                        // 2. Filtro de título avançado
                         val matchTitulo = titLower.isEmpty() || title.lowercase().contains(titLower)
+
+                        // 3. Filtro de autor avançado
                         val matchAutor  = autLower.isEmpty() || author.lowercase().contains(autLower)
 
-                        val catLower   = category.lowercase()
-                        val fCatLower  = filtroCatTratado.lowercase()
-                        val matchCat   = ignorarCat || catLower.contains(fCatLower) || matchSinonimoCat(catLower, fCatLower)
+                        // 4. Filtro de categoria (direto + sinônimos)
+                        val catLower  = category.lowercase()
+                        val fCatLower = filtroCatTratado.lowercase()
 
+                        val matchCatDirect  = catLower.contains(fCatLower)
+                        val matchCatSynonym = when (fCatLower) {
+                            "tecnologia" -> {
+                                val s = listOf(
+                                    "tecnologia", "programação", "computação", "computer science", "software", "ti", "desenvolvimento",
+                                    "programming", "computing", "informática", "web", "android", "ios", "java", "python", "javascript",
+                                    "cloud", "aws", "azure", "docker", "agile", "scrum", "devops", "segurança", "cybersecurity",
+                                    "hacking", "banco de dados", "sql", "nosql", "artificial intelligence", "inteligência artificial",
+                                    "ai", "ia", "machine learning", "frontend", "backend", "fullstack", "data science", "hardware",
+                                    "internet", "digital", "algoritmos", "coding", "networks", "redes"
+                                )
+                                s.any { catLower.contains(it) }
+                            }
+                            "fantasia" -> {
+                                val s = listOf(
+                                    "fantasia", "fantasia épica", "fantasia juvenil", "ficção científica", "science fiction", "sci-fi",
+                                    "distopia", "fantasy", "magic", "magia", "dragons", "dragões", "bruxaria", "witchcraft", "vampiro",
+                                    "lobisomem", "zumbi", "mitologia", "mythology", "steampunk", "cyberpunk", "space opera", "alien",
+                                    "universo", "medieval", "espada", "feitiçaria"
+                                )
+                                s.any { catLower.contains(it) }
+                            }
+                            "suspense" -> {
+                                val s = listOf(
+                                    "suspense", "thriller", "mistério", "mistério policial", "crime", "mystery", "police", "terror",
+                                    "horror", "investigação", "detetive", "noir", "psicológico", "spy", "espionagem", "assassinato",
+                                    "murder", "true crime", "sobrenatural", "paranormal"
+                                )
+                                s.any { catLower.contains(it) }
+                            }
+                            "romance" -> {
+                                val s = listOf(
+                                    "romance", "drama", "romance histórico", "romance contemporâneo", "love", "romantic", "amor",
+                                    "paixão", "comédia romântica", "rom-com", "new adult", "young adult", "ya", "erótico", "sentimental"
+                                )
+                                s.any { catLower.contains(it) }
+                            }
+                            "literatura" -> {
+                                val s = listOf("fiction", "literature", "poetry", "literatura", "clássico", "classic", "contos", "short stories", "prosa", "antologia")
+                                s.any { catLower.contains(it) }
+                            }
+                            "ciência", "ciencia" -> {
+                                val s = listOf(
+                                    "science", "nature", "math", "ciência", "biologia", "física", "química", "astronomia", "matemática",
+                                    "physics", "chemistry", "biology", "astronomy", "mathematics", "pesquisa", "research", "evolução", "evolution"
+                                )
+                                s.any { catLower.contains(it) }
+                            }
+                            "história", "historia" -> {
+                                val s = listOf("history", "história", "arqueologia", "archaeology", "guerra", "war", "civilização", "biografia histórica")
+                                s.any { catLower.contains(it) }
+                            }
+                            "biografia" -> {
+                                val s = listOf("biography", "autobiography", "biografia", "memoir", "memórias", "vida de")
+                                s.any { catLower.contains(it) }
+                            }
+                            "outros" -> true
+                            else     -> false
+                        }
+
+                        val matchCat = ignorarCat || matchCatDirect || matchCatSynonym
+
+                        // 5. Filtro de disponibilidade
                         val matchDisp = when (fDisp) {
                             "Disponível"   -> isAvailable
                             "Indisponível" -> !isAvailable
                             else           -> true
                         }
 
+                        // Inclui somente se TODOS os filtros forem satisfeitos (AND cumulativo)
                         if (matchTermo && matchTitulo && matchAutor && matchCat && matchDisp) {
                             listaDeLivros.add(
                                 EntidadeLivro(
@@ -331,76 +355,21 @@ class TelaRF11_1_ResultadoPesquisa : AppCompatActivity() {
                     }
                 }
 
-                adapter.updateData(listaDeLivros)
-                Log.d("BUSCA", "Total exibido após filtros: ${listaDeLivros.size}")
-            }
-            .addOnFailureListener { e ->
-                if (isFinishing || isDestroyed) return@addOnFailureListener
-                Log.e("BUSCA", "Erro Firestore", e)
-            }
-    }
+                // Atualiza o adapter exclusivamente na Main thread
+                withContext(Dispatchers.Main) {
+                    if (isFinishing || isDestroyed) return@withContext
+                    adapter.updateData(listaDeLivros)
+                    Log.d("BUSCA", "Total exibido após filtros: ${listaDeLivros.size}")
+                }
 
-    /**
-     * Sinônimos de categoria — extraído de realizarBusca para manter o método legível.
-     */
-    private fun matchSinonimoCat(catLower: String, fCatLower: String): Boolean {
-        val mapa = mapOf(
-            "tecnologia" to listOf(
-                "programação", "computação", "computer science", "software", "ti", "desenvolvimento",
-                "programming", "computing", "informática", "web", "android", "ios", "java", "python",
-                "javascript", "cloud", "aws", "azure", "docker", "agile", "scrum", "devops", "segurança",
-                "cybersecurity", "hacking", "banco de dados", "sql", "nosql", "artificial intelligence",
-                "inteligência artificial", "ai", "ia", "machine learning", "frontend", "backend",
-                "fullstack", "data science", "hardware", "internet", "digital", "algoritmos", "coding",
-                "networks", "redes"
-            ),
-            "fantasia" to listOf(
-                "fantasia épica", "fantasia juvenil", "ficção científica", "science fiction", "sci-fi",
-                "distopia", "fantasy", "magic", "magia", "dragons", "dragões", "bruxaria", "witchcraft",
-                "vampiro", "lobisomem", "zumbi", "mitologia", "mythology", "steampunk", "cyberpunk",
-                "space opera", "alien", "universo", "medieval", "espada", "feitiçaria"
-            ),
-            "suspense" to listOf(
-                "thriller", "mistério", "mistério policial", "crime", "mystery", "police", "terror",
-                "horror", "investigação", "detetive", "noir", "psicológico", "spy", "espionagem",
-                "assassinato", "murder", "true crime", "sobrenatural", "paranormal"
-            ),
-            "romance" to listOf(
-                "drama", "romance histórico", "romance contemporâneo", "love", "romantic", "amor",
-                "paixão", "comédia romântica", "rom-com", "new adult", "young adult", "ya",
-                "erótico", "sentimental"
-            ),
-            "literatura" to listOf(
-                "fiction", "literature", "poetry", "clássico", "classic", "contos", "short stories",
-                "prosa", "antologia"
-            ),
-            "ciência" to listOf(
-                "science", "nature", "math", "biologia", "física", "química", "astronomia",
-                "matemática", "physics", "chemistry", "biology", "astronomy", "mathematics",
-                "pesquisa", "research", "evolução", "evolution"
-            ),
-            "ciencia" to listOf(
-                "science", "nature", "math", "biologia", "física", "química", "astronomia",
-                "matemática", "physics", "chemistry", "biology", "astronomy", "mathematics",
-                "pesquisa", "research", "evolução", "evolution"
-            ),
-            "história" to listOf(
-                "history", "arqueologia", "archaeology", "guerra", "war", "civilização",
-                "biografia histórica"
-            ),
-            "historia" to listOf(
-                "history", "arqueologia", "archaeology", "guerra", "war", "civilização",
-                "biografia histórica"
-            ),
-            "biografia" to listOf(
-                "biography", "autobiography", "memoir", "memórias", "vida de"
-            )
-        )
-        val sinonimos = mapa[fCatLower] ?: return fCatLower == "outros"
-        return sinonimos.any { catLower.contains(it) }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    if (isFinishing || isDestroyed) return@withContext
+                    Log.e("BUSCA", "Erro Firestore", e)
+                }
+            }
+        }
     }
-
-    // ─── BUSCA NA NUVEM (Google Books) ────────────────────────────────────────
 
     private fun buscarNaNuvem(termoParaApi: String) {
         lifecycleScope.launch(Dispatchers.IO) {
@@ -416,10 +385,11 @@ class TelaRF11_1_ResultadoPesquisa : AppCompatActivity() {
                             
                             if (isFinishing || isDestroyed) return@launch
                             val originalTermo = intent.getStringExtra("TERMO_PESQUISA") ?: ""
-                            val fTitulo = intent.getStringExtra("FILTRO_TITULO") ?: ""
-                            val fAutor  = intent.getStringExtra("FILTRO_AUTOR")  ?: ""
-                            val fCat    = intent.getStringExtra("FILTRO_CATEGORIA") ?: ""
-                            val fDisp   = intent.getStringExtra("FILTRO_DISPONIBILIDADE") ?: "Todos"
+                            val fTitulo  = intent.getStringExtra("FILTRO_TITULO") ?: ""
+                            val fAutor   = intent.getStringExtra("FILTRO_AUTOR") ?: ""
+                            val fCat     = intent.getStringExtra("FILTRO_CATEGORIA") ?: ""
+                            val fDisp    = intent.getStringExtra("FILTRO_DISPONIBILIDADE") ?: "Todos"
+                            
                             realizarBusca(originalTermo, fTitulo, fAutor, fCat, fDisp)
                         }
                     },

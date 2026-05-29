@@ -68,11 +68,11 @@ class NotificacaoAdapter(
         if (notif.coverUrl.isNotEmpty()) {
             holder.imgCapa.load(notif.coverUrl) {
                 crossfade(true)
-                placeholder(R.drawable.osda)
-                error(R.drawable.osda)
+                placeholder(R.drawable.ic_sem_capa)
+                error(R.drawable.ic_sem_capa)
             }
         } else {
-            holder.imgCapa.setImageResource(R.drawable.osda)
+            holder.imgCapa.setImageResource(R.drawable.ic_sem_capa)
         }
 
         // ── Textos ────────────────────────────────────────────────────────────
@@ -97,8 +97,13 @@ class NotificacaoAdapter(
         }
 
         // ── Clique no card ────────────────────────────────────────────────────
+        // Usa adapterPosition para evitar stale closure após reciclagem.
+        // FLAG_ACTIVITY_SINGLE_TOP é aplicado na Activity via onNotifClick.
         holder.itemView.setOnClickListener {
-            onNotifClick?.invoke(notif)
+            val pos = holder.adapterPosition
+            if (pos != RecyclerView.NO_ID.toInt()) {
+                onNotifClick?.invoke(lista[pos])
+            }
         }
     }
 

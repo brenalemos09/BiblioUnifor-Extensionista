@@ -3,8 +3,10 @@ package com.example.bibliounifornew.features.adm.solicitacoes
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
 import com.example.bibliounifornew.R
 import com.google.android.material.button.MaterialButton
 
@@ -31,10 +33,11 @@ class SolicitacoesMidiaAdapter(
 ) : RecyclerView.Adapter<SolicitacoesMidiaAdapter.ViewHolder>() {
 
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val txtTitulo   : TextView      = view.findViewById(R.id.txtTituloSolicitacao)
-        val txtAutor    : TextView      = view.findViewById(R.id.txtAutorSolicitacao)
-        val txtUsuario  : TextView      = view.findViewById(R.id.txtUsuarioSolicitacao)
-        val txtTipos    : TextView      = view.findViewById(R.id.txtTiposSolicitacao)
+        val imgCapa     : ImageView      = view.findViewById(R.id.imgCapaSolicitacao)
+        val txtTitulo   : TextView       = view.findViewById(R.id.txtTituloSolicitacao)
+        val txtAutor    : TextView       = view.findViewById(R.id.txtAutorSolicitacao)
+        val txtUsuario  : TextView       = view.findViewById(R.id.txtUsuarioSolicitacao)
+        val txtTipos    : TextView       = view.findViewById(R.id.txtTiposSolicitacao)
         val btnVer      : MaterialButton = view.findViewById(R.id.btnVerSolicitacoesAdm)
         val btnAudio    : MaterialButton = view.findViewById(R.id.btnEnviarAudiobookAdm)
         val btnPdf      : MaterialButton = view.findViewById(R.id.btnEnviarPdfAdm)
@@ -50,6 +53,14 @@ class SolicitacoesMidiaAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = lista[position]
+
+        // BUG-4B FIX: carrega capa via Coil com crossfade — sem Tolkien hardcoded
+        holder.imgCapa.load(item.coverUrl.ifEmpty { null }) {
+            crossfade(true)
+            placeholder(R.drawable.ic_sem_capa)
+            error(R.drawable.ic_sem_capa)
+            fallback(R.drawable.ic_sem_capa)
+        }
 
         holder.txtTitulo.text  = item.tituloLivro
         holder.txtAutor.text   = item.autorLivro

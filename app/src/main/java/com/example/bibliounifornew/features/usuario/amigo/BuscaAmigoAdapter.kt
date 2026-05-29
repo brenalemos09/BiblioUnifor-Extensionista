@@ -6,21 +6,25 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
 import com.example.bibliounifornew.R
 
 /**
  * Adapter para a tela de Busca de Amigos (RF17_3).
- * Exibe usuários cadastrados no Firestore com botão "+" para enviar solicitação de amizade.
- * Toda lógica Firestore fica no callback [onEnviarSolicitacao] — adapter apenas faz binding.
+ *
+ * Avatar carregado via Coil com size(150, 150) + crossfade — evita OOM ao reciclar
+ * muitos itens rapidamente (o Coil descarta bitmaps fora da viewport automaticamente).
+ * Toda lógica Firestore fica no callback [onEnviarSolicitacao].
  */
 class BuscaAmigoAdapter(
-    private val lista: MutableList<UsuarioAmigo>,
-    private val onEnviarSolicitacao: (UsuarioAmigo) -> Unit
+    private val lista                : MutableList<UsuarioAmigo>,
+    private val onEnviarSolicitacao  : (UsuarioAmigo) -> Unit
 ) : RecyclerView.Adapter<BuscaAmigoAdapter.BuscaViewHolder>() {
 
     inner class BuscaViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val txtNome  : TextView  = itemView.findViewById(R.id.txtNomeAmigo)
-        val btnMais  : ImageView = itemView.findViewById(R.id.btnMaisAmigo)
+        val imgAmigo: ImageView = itemView.findViewById(R.id.imgAmigo)
+        val txtNome : TextView  = itemView.findViewById(R.id.txtNomeAmigo)
+        val btnMais : ImageView = itemView.findViewById(R.id.btnMaisAmigo)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BuscaViewHolder {
@@ -31,18 +35,25 @@ class BuscaAmigoAdapter(
 
     override fun onBindViewHolder(holder: BuscaViewHolder, position: Int) {
         val usuario = lista[position]
+
         holder.txtNome.text = usuario.nome.ifEmpty { usuario.usuario }.ifEmpty { "Usuário" }
-        holder.btnMais.setOnClickListener {
-            onEnviarSolicitacao(usuario)
+
+        // Avatar via Coil: size(150, 150) libera pressão de memória no GC ao
+        // reciclar muitos itens. crossfade elimina o flash branco entre loads.
+        holder.imgAmigo.load(usuario.fotoUrl.ifEmpty { null }) {
+            size(150, 150)
+            crossfade(true)
+            placeholder(R.drawable.user_placeholder)
+            error(R.drawable.user_placeholder)
+            fallback(R.drawable.user_placeholder)
         }
-        holder.itemView.setOnClickListener {
-            onEnviarSolicitacao(usuario)
-        }
+
+        holder.btnMais.setOnClickListener { onEnviarSolicitacao(usuario) }
+        holder.itemView.setOnClickListener { onEnviarSolicitacao(usuario) }
     }
 
     override fun getItemCount(): Int = lista.size
 
-    /** Substitui a lista completa (usado ao filtrar por texto). */
     fun atualizarLista(novaLista: List<UsuarioAmigo>) {
         lista.clear()
         lista.addAll(novaLista)

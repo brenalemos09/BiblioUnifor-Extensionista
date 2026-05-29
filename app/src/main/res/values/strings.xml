@@ -455,6 +455,10 @@
     <string name="label_alugado_adm">Alugado:</string>
     <string name="btn_ver_livro">Ver livro</string>
     <string name="btn_ver_usuario">Ver usuário</string>
+    <string name="btn_aprovar_aluguel">Aprovar Aluguel</string>
+    <string name="btn_receber_livro">Receber Livro</string>
+    <string name="msg_livro_recebido">Livro recebido e estoque atualizado com sucesso.</string>
+    <string name="msg_aluguel_aprovado_adm">Aluguel aprovado! Prazo: 14 dias.</string>
     <string name="desc_avatar_usuario_aluguel">Avatar do usuário</string>
     <string name="desc_capa_livro_aluguel">Capa do livro</string>
     <string name="msg_nenhum_aluguel_colecao">Nenhum aluguel encontrado.</string>
@@ -560,6 +564,16 @@
     <string name="erro_abrir_arquivo">Não foi possível abrir o arquivo.</string>
     <string name="erro_login_para_alugar">Faça login para alugar.</string>
     <string name="fmt_erro_solicitacao">Erro ao registrar solicitação: %1$s</string>
+    <string name="msg_processando">Processando…</string>
+    <string name="msg_sem_estoque_aluguel">Sem exemplares disponíveis no momento.</string>
+    <string name="msg_solicitacao_aluguel_enviada">Solicitação de aluguel enviada! Aguarde a confirmação do ADM.</string>
+    <string name="label_avaliacoes_title">Avaliações</string>
+    <string name="btn_avaliar_livro">Avaliar Livro</string>
+    <string name="popup_avaliar_titulo">Escreva sua Avaliação</string>
+    <string name="popup_avaliar_hint">Compartilhe sua opinião sobre este livro…</string>
+    <string name="msg_avaliacao_salva">Avaliação publicada com sucesso!</string>
+    <string name="erro_avaliacao_vazia">Escreva algo antes de publicar.</string>
+    <string name="msg_sem_avaliacoes_texto">Seja o primeiro a avaliar este livro.</string>
 
     <!-- RF15 — Minha Livraria -->
     <string name="msg_livraria_vazia">Sua livraria está vazia.</string>

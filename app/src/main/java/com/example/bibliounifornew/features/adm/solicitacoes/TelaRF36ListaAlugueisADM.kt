@@ -19,8 +19,12 @@ import com.example.bibliounifornew.R
 import com.example.bibliounifornew.features.adm.gerenciamento.NavigationHelperADM
 import com.example.bibliounifornew.features.adm.gerenciamento.TelaRF30UsuariosParaADM
 import com.example.bibliounifornew.features.adm.gerenciamento.TelaRF37InfoLivroADM
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
@@ -48,16 +52,26 @@ class TelaRF36ListaAlugueisADM : AppCompatActivity() {
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerViewAlugueis)
         adapter = AlugueisAdapter(
             listaAlugueis,
-            onVerLivro    = { item ->
-                val intent = Intent(this, TelaRF37InfoLivroADM::class.java)
-                intent.putExtra("LIVRO_ID", item.idLivro)
-                startActivity(intent)
+            onVerLivro   = { item ->
+                // Issue #11: abre RF37 com o LIVRO_ID para o ADM gerenciar a mídia
+                if (item.idLivro.isNotEmpty()) {
+                    startActivity(
+                        Intent(this, TelaRF37InfoLivroADM::class.java)
+                            .putExtra("LIVRO_ID", item.idLivro)
+                    )
+                }
             },
-            onVerUsuario  = { item ->
-                val intent = Intent(this, TelaRF30UsuariosParaADM::class.java)
-                intent.putExtra("USUARIO_ID", item.uidAluno)
-                startActivity(intent)
-            }
+            onVerUsuario = { item ->
+                // Issue #11: abre RF30 com o UID do aluno para o ADM ver o perfil
+                if (item.uidAluno.isNotEmpty()) {
+                    startActivity(
+                        Intent(this, TelaRF30UsuariosParaADM::class.java)
+                            .putExtra("USUARIO_ID", item.uidAluno)
+                    )
+                }
+            },
+            onAprovar    = { item -> aprovarAluguel(item) },
+            onReceber    = { item -> receberLivro(item)  }
         )
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
@@ -163,52 +177,81 @@ class TelaRF36ListaAlugueisADM : AppCompatActivity() {
     }
 
     /**
-     * PERF-2: Mapeia documentos Firestore para [ItemAluguel] SEM N+1 queries.
+     * Hidratação de dados com JOIN paralelo por coroutine.
      *
-     * Prioridade de leitura para cada campo:
-     *   nomeUsuario → "nomeAluno" | "usuarioNome" | fallback "Usuário"
-     *   tituloLivro → "tituloLivro" | "titulo" | fallback "Livro Desconhecido"
-     *   autorLivro  → "autorLivro"  | "autor"  | fallback "Autor Desconhecido"
+     * Para cada documento de solicitacoes_emprestimo dispara em paralelo:
+     *   • db.collection("usuarios").document(uidAluno).get().await()
+     *     → preenche nomeUsuario e fotoUsuario
+     *   • db.collection("livros").document(idLivro).get().await()
+     *     → preenche tituloLivro, autorLivro e coverUrl
      *
-     * Documentos antigos (sem campos desnormalizados) exibem o fallback.
-     * Documentos novos (criados via GAP-5) já carregam os campos corretamente.
+     * Usa async/awaitAll dentro de coroutineScope — os 2 fetches por item
+     * rodam em paralelo, todos em Dispatchers.IO, sem tocar a Main Thread.
+     * Fallback: campos desnormalizados do próprio documento (docs antigos).
      */
-    private fun mapearDocumentos(
+    private suspend fun mapearDocumentos(
         documentos: List<com.google.firebase.firestore.DocumentSnapshot>
-    ): List<ItemAluguel> {
-        return documentos
-            .mapNotNull { doc ->
-                val docId   = doc.id
-                val uidAluno = doc.getString("uidAluno")   ?: doc.getString("usuarioId") ?: ""
-                val idLivro  = doc.getString("idLivro")    ?: doc.getString("livroId")   ?: ""
-                val status   = doc.getString("status")     ?: "ativo"
-                val dataMs   = doc.getLong("dataSolicitacao") ?: doc.getLong("dataMs")   ?: 0L
+    ): List<ItemAluguel> = coroutineScope {
+        documentos.map { doc ->
+            async {
+                val uidAluno      = doc.getString("uidAluno")  ?: doc.getString("usuarioId") ?: ""
+                val idLivro       = doc.getString("idLivro")   ?: doc.getString("livroId")   ?: ""
+                val status        = doc.getString("status")    ?: "ativo"
+                val dataMs        = doc.getLong("dataSolicitacao") ?: doc.getLong("dataMs")   ?: 0L
+                val dataDevolucao = doc.getLong("dataDevolucao")
+                    ?: doc.getLong("dataDevolucaoMs") ?: 0L
 
-                // ── Campos desnormalizados — zero joins adicionais ────────────
-                val nomeUsuario = doc.getString("nomeAluno")
-                    ?: doc.getString("usuarioNome")
+                // ── JOIN paralelo: usuario + livro em simultâneo ──────────────
+                val deferredUsuario = if (uidAluno.isNotEmpty()) {
+                    async {
+                        try { db.collection("usuarios").document(uidAluno).get().await() }
+                        catch (_: Exception) { null }
+                    }
+                } else null
+
+                val deferredLivro = if (idLivro.isNotEmpty()) {
+                    async {
+                        try { db.collection("livros").document(idLivro).get().await() }
+                        catch (_: Exception) { null }
+                    }
+                } else null
+
+                val docUsuario = deferredUsuario?.await()
+                val docLivro   = deferredLivro?.await()
+
+                // ── Resolve campos com fallback para desnormalizados ──────────
+                val nomeUsuario = docUsuario?.getString("nome")
+                    ?: doc.getString("nomeAluno") ?: doc.getString("usuarioNome")
                     ?: getString(R.string.placeholder_usuario)
 
-                val tituloLivro = doc.getString("tituloLivro")
-                    ?: doc.getString("titulo")
+                val fotoUsuario = docUsuario?.getString("fotoUrl") ?: ""
+
+                val tituloLivro = (docLivro?.getString("title") ?: docLivro?.getString("titulo"))
+                    ?: doc.getString("tituloLivro") ?: doc.getString("titulo")
                     ?: getString(R.string.sem_titulo)
 
-                val autorLivro  = doc.getString("autorLivro")
-                    ?: doc.getString("autor")
+                val autorLivro = (docLivro?.getString("author") ?: docLivro?.getString("autor"))
+                    ?: doc.getString("autorLivro") ?: doc.getString("autor")
                     ?: getString(R.string.sem_autor)
 
+                val coverUrl = docLivro?.getString("coverUrl")
+                    ?: doc.getString("coverUrl") ?: ""
+
                 ItemAluguel(
-                    docId       = docId,
-                    uidAluno    = uidAluno,
-                    idLivro     = idLivro,
-                    dataMs      = dataMs,
-                    status      = status,
-                    nomeUsuario = nomeUsuario,
-                    tituloLivro = tituloLivro,
-                    autorLivro  = autorLivro
+                    docId         = doc.id,
+                    uidAluno      = uidAluno,
+                    idLivro       = idLivro,
+                    dataMs        = dataMs,
+                    dataDevolucao = dataDevolucao,
+                    status        = status,
+                    nomeUsuario   = nomeUsuario,
+                    fotoUsuario   = fotoUsuario,
+                    tituloLivro   = tituloLivro,
+                    autorLivro    = autorLivro,
+                    coverUrl      = coverUrl
                 )
             }
-            .sortedByDescending { it.dataMs }
+        }.awaitAll().sortedByDescending { it.dataMs }
     }
 
     // ─── FILTRAGEM ──────────────────────────────────────────────────────────
@@ -234,6 +277,125 @@ class TelaRF36ListaAlugueisADM : AppCompatActivity() {
         
         val tvVazia = findViewById<TextView>(R.id.tvListaVazia)
         tvVazia?.visibility = if (filtrada.isEmpty()) View.VISIBLE else View.GONE
+    }
+
+    // ─── APROVAR ALUGUEL (pendente → ativo) ───────────────────────────────────
+
+    /**
+     * Aprova uma solicitação de empréstimo físico:
+     *   • status: "pendente" → "ativo"
+     *   • dataEmprestimo: agora
+     *   • dataDevolucao: agora + 14 dias
+     *
+     * A alteração reflete em tempo real no StatusAluguelAdapter do aluno
+     * (status muda de "Aguardando aprovação" para "Ativo" com a data de devolução).
+     */
+    private fun aprovarAluguel(item: ItemAluguel) {
+        if (item.docId.isEmpty()) return
+        val agora        = System.currentTimeMillis()
+        val dataDevolucao = agora + (14L * 24 * 60 * 60 * 1_000)
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                db.collection("solicitacoes_emprestimo").document(item.docId)
+                    .update(mapOf(
+                        "status"          to "ativo",
+                        "dataEmprestimo"  to agora,
+                        "dataDevolucao"   to dataDevolucao,
+                        "dataDevolucaoMs" to dataDevolucao
+                    ))
+                    .await()
+
+                withContext(Dispatchers.Main) {
+                    if (isFinishing || isDestroyed) return@withContext
+                    Toast.makeText(
+                        this@TelaRF36ListaAlugueisADM,
+                        getString(R.string.msg_aluguel_aprovado_adm),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    // Recarrega a lista para refletir o novo status
+                    listaAlugueis.clear()
+                    carregarAlugueis()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    if (!isFinishing && !isDestroyed) {
+                        Toast.makeText(
+                            this@TelaRF36ListaAlugueisADM,
+                            "Erro ao aprovar aluguel: ${e.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            }
+        }
+    }
+
+    // ─── RECEBER LIVRO (ativo → devolvido + estoque +1) ──────────────────────
+
+    /**
+     * Registra a devolução física do livro via writeBatch atômico:
+     *   Etapa A — solicitacoes_emprestimo/{docId}.status → "devolvido"
+     *   Etapa B — livros/{idLivro}: quantidade, estoque, exemplares += 1
+     *             (FieldValue.increment é atômico — sem risco de race condition)
+     *
+     * Remove o item da lista do ADM após o commit bem-sucedido.
+     */
+    private fun receberLivro(item: ItemAluguel) {
+        if (item.docId.isEmpty()) return
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val batch = db.batch()
+
+                // Etapa A: marca devolução no empréstimo
+                batch.update(
+                    db.collection("solicitacoes_emprestimo").document(item.docId),
+                    mapOf(
+                        "status"            to "devolvido",
+                        "dataDevolucaoReal" to System.currentTimeMillis()
+                    )
+                )
+
+                // Etapa B: incrementa estoque disponível do livro atomicamente
+                if (item.idLivro.isNotEmpty()) {
+                    batch.update(
+                        db.collection("livros").document(item.idLivro),
+                        mapOf(
+                            "quantidade" to FieldValue.increment(1),
+                            "estoque"    to FieldValue.increment(1),
+                            "exemplares" to FieldValue.increment(1)
+                        )
+                    )
+                }
+
+                batch.commit().await()
+
+                withContext(Dispatchers.Main) {
+                    if (isFinishing || isDestroyed) return@withContext
+                    Toast.makeText(
+                        this@TelaRF36ListaAlugueisADM,
+                        getString(R.string.msg_livro_recebido),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    // Remove da lista sem recarregar (resposta imediata ao ADM)
+                    adapter.removerItem(item.docId)
+                    listaAlugueis.removeAll { it.docId == item.docId }
+                    val tvVazia = findViewById<TextView>(R.id.tvListaVazia)
+                    tvVazia?.visibility = if (listaAlugueis.isEmpty()) View.VISIBLE else View.GONE
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    if (!isFinishing && !isDestroyed) {
+                        Toast.makeText(
+                            this@TelaRF36ListaAlugueisADM,
+                            "Erro ao registrar devolução: ${e.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            }
+        }
     }
 
     private fun abrirPopupFiltro() {

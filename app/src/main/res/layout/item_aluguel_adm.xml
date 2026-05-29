@@ -26,10 +26,10 @@
             app:strokeWidth="0dp">
 
             <ImageView
+                android:id="@+id/imgAvatarUsuarioAluguel"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:scaleType="centerCrop"
-                android:src="@drawable/user_placeholder"
                 android:contentDescription="@string/desc_avatar_usuario_aluguel" />
 
         </com.google.android.material.card.MaterialCardView>
@@ -68,7 +68,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="100dp"
                 android:scaleType="centerCrop"
-                android:src="@drawable/user_placeholder"
                 android:contentDescription="@string/desc_capa_livro_aluguel" />
 
         </com.google.android.material.card.MaterialCardView>
@@ -128,6 +127,16 @@
 
             </LinearLayout>
 
+            <!-- Status badge -->
+            <TextView
+                android:id="@+id/txtStatusAluguelAdm"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:text="" />
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnVerLivroAluguel"
                 android:layout_width="match_parent"
@@ -157,6 +166,42 @@
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
                 app:backgroundTint="@color/biblio_blue"
+                app:cornerRadius="22dp"
+                app:elevation="2dp" />
+
+            <!-- Aprovar Aluguel — visível apenas para status "pendente" -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAprovarAluguel"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="8dp"
+                android:text="@string/btn_aprovar_aluguel"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:visibility="gone"
+                app:backgroundTint="#2E7D32"
+                app:cornerRadius="22dp"
+                app:elevation="2dp" />
+
+            <!-- Receber Livro — visível para status "ativo" ou "atrasado" -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnReceberLivro"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="8dp"
+                android:text="@string/btn_receber_livro"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:visibility="gone"
+                app:backgroundTint="#E65100"
                 app:cornerRadius="22dp"
                 app:elevation="2dp" />
 

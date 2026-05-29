@@ -4,6 +4,8 @@ import android.app.Dialog
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import android.view.Window
 import android.widget.Button
@@ -28,53 +30,48 @@ class TelaRF37InfoLivroADM : AppCompatActivity() {
     private val auth = FirebaseAuth.getInstance()
     private var livroId: String = ""
     private var activeDialog: Dialog? = null
-
-    // Estado de estoque mantido em memória para evitar re-leituras constantes
-    private var quantidadeDisponivel: Long = 0L
-    private var totalExemplares     : Long = 0L
+    private var qtdDisponivel: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.telarf37_info_livro_adm)
 
         livroId = intent.getStringExtra("LIVRO_ID") ?: ""
-        if (livroId.isEmpty()) {
+
+        if (livroId.isNotEmpty()) {
+            carregarDadosLivro()
+        } else {
+            // GAP-2 FIX: ID ausente → não deixa tela vazia com "O Alienista" do XML.
+            // Toast + finish() retornam imediatamente para RF32 sem estado quebrado.
             Toast.makeText(this, getString(R.string.erro_id_livro_nao_fornecido), Toast.LENGTH_SHORT).show()
             finish()
             return
         }
 
-        carregarDadosLivro()
+        // Configurar cliques dos lápis para editar campos
+        configurarEdicao(R.id.btnEditTitulo,        R.id.editTituloLivro,   "title")
+        configurarEdicao(R.id.btnEditAutor,         R.id.editAutorLivro,    "author")
+        configurarEdicao(R.id.btnEditDescricao,     R.id.editDescricaoLivro,"description")
+        configurarEdicao(R.id.btnEditLingua,        R.id.editLingua,        "language")
+        configurarEdicao(R.id.btnEditEditora,       R.id.editEditora,       "publisher")
+        configurarEdicao(R.id.btnEditDimensao,      R.id.editDimensao,      "dimensions")
+        configurarEdicao(R.id.btnEditISBN10,        R.id.editISBN10,        "isbn10")
+        configurarEdicao(R.id.btnEditISBN13,        R.id.editISBN13,        "isbn13")
+        configurarEdicao(R.id.btnEditData,          R.id.editData,          "publishedDate")
+        configurarEdicao(R.id.btnEditPaginas,       R.id.editPaginas,       "pageCount")
+        // Campos de URL e Categoria — adicionados para fechar o schema completo
+        configurarEdicao(R.id.btnEditCategoria,     R.id.editCategoria,     "category")
+        configurarEdicao(R.id.btnEditLinkCapa,      R.id.editLinkCapa,      "coverUrl")
+        configurarEdicao(R.id.btnEditLinkPdf,       R.id.editLinkPdf,       "linkPdf")
+        configurarEdicao(R.id.btnEditLinkAudiobook, R.id.editLinkAudiobook, "linkAudiobook")
 
-        // ─── LÁPIS → habilitar campo individual ──────────────────────────────
-        configurarEdicao(R.id.btnEditTitulo,        R.id.editTituloLivro,    "title")
-        configurarEdicao(R.id.btnEditAutor,         R.id.editAutorLivro,     "author")
-        configurarEdicao(R.id.btnEditDescricao,     R.id.editDescricaoLivro, "description")
-        configurarEdicao(R.id.btnEditLingua,        R.id.editLingua,         "language")
-        configurarEdicao(R.id.btnEditEditora,       R.id.editEditora,        "publisher")
-        configurarEdicao(R.id.btnEditDimensao,      R.id.editDimensao,       "dimensions")
-        configurarEdicao(R.id.btnEditISBN10,        R.id.editISBN10,         "isbn10")
-        configurarEdicao(R.id.btnEditISBN13,        R.id.editISBN13,         "isbn13")
-        configurarEdicao(R.id.btnEditASIN,          R.id.editASIN,           "asin")
-        configurarEdicao(R.id.btnEditData,          R.id.editData,           "publishDate")
-        configurarEdicao(R.id.btnEditPaginas,       R.id.editPaginas,        "totalPages")
-        configurarEdicao(R.id.btnEditCategoria,     R.id.editCategoria,      "category")
-        configurarEdicao(R.id.btnEditLinkCapa,      R.id.editLinkCapa,       "coverUrl")
-        configurarEdicao(R.id.btnEditLinkPdf,       R.id.editLinkPdf,        "linkPdf")
-        configurarEdicao(R.id.btnEditLinkAudiobook, R.id.editLinkAudiobook,  "linkAudiobook")
-
-        // ─── CONTROLE DE EXEMPLARES ──────────────────────────────────────────
+        // Controle de Exemplares
         findViewById<com.google.android.material.card.MaterialCardView>(R.id.btnDiminuirExemplares)
             ?.setOnClickListener { atualizarExemplares(-1) }
         findViewById<com.google.android.material.card.MaterialCardView>(R.id.btnAumentarExemplares)
             ?.setOnClickListener { atualizarExemplares(1) }
 
-        // ─── SALVAR TUDO ─────────────────────────────────────────────────────
-        findViewById<MaterialButton>(R.id.btnSalvarModificacoes)?.setOnClickListener {
-            salvarTodasModificacoes()
-        }
-
-        // ─── APAGAR MÍDIA ────────────────────────────────────────────────────
+        // Botão Apagar Mídia
         findViewById<Button>(R.id.btnApagarMidia)?.setOnClickListener {
             abrirPopupApagar()
         }
@@ -88,40 +85,53 @@ class TelaRF37InfoLivroADM : AppCompatActivity() {
                 if (isFinishing || isDestroyed) return@addOnSuccessListener
                 if (!doc.exists()) return@addOnSuccessListener
 
-                fun str(vararg keys: String) =
-                    keys.mapNotNull { doc.getString(it)?.takeIf { v -> v.isNotEmpty() } }
-                        .firstOrNull() ?: ""
+                findViewById<EditText>(R.id.editTituloLivro)?.setText(
+                    doc.getString("title")       ?: doc.getString("titulo")      ?: "")
+                findViewById<EditText>(R.id.editAutorLivro)?.setText(
+                    doc.getString("author")      ?: doc.getString("autor")       ?: "")
+                findViewById<EditText>(R.id.editDescricaoLivro)?.setText(
+                    doc.getString("description") ?: doc.getString("descricao")   ?: "")
+                findViewById<EditText>(R.id.editLingua)?.setText(
+                    doc.getString("language")    ?: "Português")
+                findViewById<EditText>(R.id.editEditora)?.setText(
+                    doc.getString("publisher")   ?: doc.getString("editora")     ?: "")
+                findViewById<EditText>(R.id.editDimensao)?.setText(
+                    doc.getString("dimensions")  ?: "")
+                findViewById<EditText>(R.id.editISBN10)?.setText(
+                    doc.getString("isbn10")      ?: "")
+                findViewById<EditText>(R.id.editISBN13)?.setText(
+                    doc.getString("isbn13")      ?: "")
+                findViewById<EditText>(R.id.editData)?.setText(
+                    doc.getString("publishedDate") ?: "")
+                findViewById<EditText>(R.id.editPaginas)?.setText(
+                    doc.getLong("pageCount")?.toString() ?: "0")
 
-                fun lng(vararg keys: String) =
-                    keys.mapNotNull { doc.getLong(it) }.firstOrNull() ?: 0L
+                // Campos de URL e Categoria
+                val categoria = doc.getString("category")
+                    ?: doc.getString("categoria") ?: ""
+                findViewById<EditText>(R.id.editCategoria)?.setText(categoria)
 
-                // Campos de texto
-                setField(R.id.editTituloLivro,    str("title", "titulo"))
-                setField(R.id.editAutorLivro,     str("author", "autor"))
-                setField(R.id.editDescricaoLivro, str("description", "descricao"))
-                setField(R.id.editLingua,         str("language", "lingua").ifEmpty { "Português" })
-                setField(R.id.editEditora,        str("publisher", "editora"))
-                setField(R.id.editDimensao,       str("dimensions", "dimensoes", "dimensao"))
-                setField(R.id.editISBN10,         str("isbn10", "isbn_10", "ISBN10"))
-                setField(R.id.editISBN13,         str("isbn13", "isbn_13", "ISBN13"))
-                setField(R.id.editASIN,           str("asin", "ASIN"))
-                setField(R.id.editData,           str("publishDate", "publishedDate", "dataPublicacao"))
-                setField(R.id.editPaginas,        lng("totalPages", "pageCount", "paginas").let {
-                    if (it > 0) it.toString() else "0"
-                })
-                setField(R.id.editCategoria,      str("category", "categoria"))
-                setField(R.id.editLinkCapa,       str("coverUrl", "imagemUrl"))
-                setField(R.id.editLinkPdf,        str("linkPdf"))
-                setField(R.id.editLinkAudiobook,  str("linkAudiobook"))
+                val linkCapa = doc.getString("coverUrl")
+                    ?: doc.getString("imagemUrl") ?: ""
+                findViewById<EditText>(R.id.editLinkCapa)?.setText(linkCapa)
 
-                // Braille — define estado antes de registrar listener
-                val hasBraille = doc.getBoolean("hasBraille") ?: doc.getBoolean("braille") ?: false
+                val linkPdf = doc.getString("linkPdf") ?: ""
+                findViewById<EditText>(R.id.editLinkPdf)?.setText(linkPdf)
+
+                val linkAudio = doc.getString("linkAudiobook") ?: ""
+                findViewById<EditText>(R.id.editLinkAudiobook)?.setText(linkAudio)
+
+                // Braille — define o estado ANTES de registrar o listener para evitar
+                // disparos espúrios ao reciclar / recarregar.
+                val hasBraille = doc.getBoolean("braille")
+                    ?: doc.getBoolean("hasBraille") ?: false
                 val checkBraille = findViewById<CheckBox>(R.id.checkBrailleInfo)
                 checkBraille?.isChecked = hasBraille
                 checkBraille?.setOnCheckedChangeListener { _, isChecked ->
                     db.collection("livros").document(livroId)
                         .update(mapOf("braille" to isChecked, "hasBraille" to isChecked))
                         .addOnSuccessListener {
+                            if (isFinishing || isDestroyed) return@addOnSuccessListener
                             Toast.makeText(
                                 this@TelaRF37InfoLivroADM,
                                 getString(R.string.msg_campo_atualizado),
@@ -129,6 +139,7 @@ class TelaRF37InfoLivroADM : AppCompatActivity() {
                             ).show()
                         }
                         .addOnFailureListener {
+                            if (isFinishing || isDestroyed) return@addOnFailureListener
                             Toast.makeText(
                                 this@TelaRF37InfoLivroADM,
                                 getString(R.string.erro_conexao_banco),
@@ -137,80 +148,69 @@ class TelaRF37InfoLivroADM : AppCompatActivity() {
                         }
                 }
 
-                // ── ESTOQUE X/Y ──────────────────────────────────────────────
-                quantidadeDisponivel = lng("quantidade", "estoque", "exemplares")
-                totalExemplares      = lng("totalExemplares", "stockQuantity")
-                    .takeIf { it > 0L } ?: quantidadeDisponivel
+                // BUG-2 FIX: separa exemplares totais (campo "exemplares") de disponíveis
+                // ("quantidade"), atualiza o display "X/Y" e respeita a invariante
+                // disponível <= total no método atualizarExemplares().
+                val totalExemplares = (doc.getLong("exemplares")
+                    ?: doc.getLong("totalExemplares")
+                    ?: doc.getLong("quantidade")
+                    ?: 0L).toInt()
+                val disponivelExemplares = (doc.getLong("quantidade")
+                    ?: doc.getLong("estoque")
+                    ?: totalExemplares.toLong()).toInt().coerceAtMost(totalExemplares)
 
-                atualizarDisplayEstoque()
+                qtdDisponivel = disponivelExemplares
+                findViewById<TextView>(R.id.textExemplaresTotal)?.text   = totalExemplares.toString()
+                findViewById<TextView>(R.id.textExemplaresDisplay)?.text = "$disponivelExemplares/$totalExemplares"
 
-                // Capa: fallback neutro ic_sem_capa ao invés do livro do Tolkien (osda)
-                val coverUrlVal = str("coverUrl", "imagemUrl")
+                // BUG-F5 FIX: usa ID direto em vez de getChildAt(0)
+                val coverUrlVal = doc.getString("coverUrl") ?: doc.getString("imagemUrl") ?: ""
                 findViewById<ImageView>(R.id.imgCapaLivroDetalhe)?.load(
                     coverUrlVal.ifEmpty { null }
                 ) {
-                    placeholder(R.drawable.ic_sem_capa)
-                    error(R.drawable.ic_sem_capa)
-                    fallback(R.drawable.ic_sem_capa)
+                    placeholder(R.drawable.osda)
+                    error(R.drawable.osda)
+                    fallback(R.drawable.osda)
                 }
 
                 carregarAvaliacoes()
             }
-            .addOnFailureListener {
-                Toast.makeText(this, getString(R.string.erro_conexao_banco), Toast.LENGTH_SHORT).show()
-            }
-    }
-
-    private fun setField(viewId: Int, texto: String) {
-        findViewById<EditText>(viewId)?.setText(texto)
-    }
-
-    // ─── DISPLAY DE ESTOQUE X/Y ───────────────────────────────────────────────
-
-    private fun atualizarDisplayEstoque() {
-        val disponivel = quantidadeDisponivel.coerceAtLeast(0L)
-        val total      = totalExemplares.coerceAtLeast(disponivel)
-        // Exibe "disp/total disponíveis" no label visual
-        findViewById<TextView>(R.id.textExemplaresFormato)?.text =
-            getString(R.string.fmt_exemplares_ratio, disponivel.toInt(), total.toInt())
-        // Exibe só o total no controle de stepper +/-
-        findViewById<TextView>(R.id.textExemplaresTotal)?.text = total.toString()
     }
 
     // ─── AVALIAÇÕES ───────────────────────────────────────────────────────────
 
     private fun carregarAvaliacoes() {
-        val container        = findViewById<LinearLayout>(R.id.containerAvaliacoes)
+        val container = findViewById<LinearLayout>(R.id.containerAvaliacoes)
         val textSemAvaliacoes = findViewById<TextView>(R.id.textSemAvaliacoes)
-        container?.let { ll ->
-            for (i in ll.childCount - 1 downTo 0) {
-                val child = ll.getChildAt(i)
-                if (child.id != R.id.textSemAvaliacoes) ll.removeView(child)
+
+        container?.let {
+            for (i in it.childCount - 1 downTo 0) {
+                val child = it.getChildAt(i)
+                if (child.id != R.id.textSemAvaliacoes) it.removeView(child)
             }
         }
         textSemAvaliacoes?.visibility = View.VISIBLE
     }
 
-    // ─── EDIÇÃO INDIVIDUAL POR LÁPIS ─────────────────────────────────────────
+    // ─── EDIÇÃO DE CAMPOS ─────────────────────────────────────────────────────
 
     private fun configurarEdicao(botaoId: Int, campoId: Int, firestoreField: String) {
         val botao = findViewById<ImageView>(botaoId)
-        val campo = findViewById<EditText>(campoId) ?: return
+        val campo = findViewById<EditText>(campoId)
 
         botao?.setOnClickListener {
-            if (!campo.isEnabled) {
+            if (campo?.isEnabled == false) {
                 campo.isEnabled = true
                 campo.requestFocus()
                 campo.setSelection(campo.text.length)
                 botao.setImageResource(android.R.drawable.ic_menu_save)
                 Toast.makeText(this, getString(R.string.msg_editando), Toast.LENGTH_SHORT).show()
             } else {
-                val novoValor = campo.text.toString()
-                db.collection("livros").document(livroId)
-                    .update(firestoreField, novoValor)
+                val novoValor = campo?.text.toString()
+                db.collection("livros").document(livroId).update(firestoreField, novoValor)
                     .addOnSuccessListener {
                         if (isFinishing || isDestroyed) return@addOnSuccessListener
-                        campo.isEnabled = false
+                        campo?.isEnabled = false
                         botao.setImageResource(R.drawable.ic_edit_pencil)
                         Toast.makeText(this, getString(R.string.msg_campo_atualizado), Toast.LENGTH_SHORT).show()
                     }
@@ -222,99 +222,45 @@ class TelaRF37InfoLivroADM : AppCompatActivity() {
         }
     }
 
-    // ─── SALVAR TODAS AS MODIFICAÇÕES (batch update) ──────────────────────────
-
-    private fun salvarTodasModificacoes() {
-        fun textOf(id: Int) = findViewById<EditText>(id)?.text?.toString()?.trim() ?: ""
-        fun longOf(id: Int) = textOf(id).toLongOrNull()
-
-        val hasBraille = findViewById<CheckBox>(R.id.checkBrailleInfo)?.isChecked ?: false
-        val paginas = longOf(R.id.editPaginas) ?: 0L
-
-        val campos = mutableMapOf<String, Any>(
-            "title"         to textOf(R.id.editTituloLivro),
-            "author"        to textOf(R.id.editAutorLivro),
-            "description"   to textOf(R.id.editDescricaoLivro),
-            "language"      to textOf(R.id.editLingua),
-            "lingua"        to textOf(R.id.editLingua),
-            "publisher"     to textOf(R.id.editEditora),
-            "editora"       to textOf(R.id.editEditora),
-            "dimensions"    to textOf(R.id.editDimensao),
-            "isbn10"        to textOf(R.id.editISBN10),
-            "isbn13"        to textOf(R.id.editISBN13),
-            "asin"          to textOf(R.id.editASIN),
-            "publishDate"   to textOf(R.id.editData),
-            "publishedDate" to textOf(R.id.editData),
-            "totalPages"    to paginas,
-            "pageCount"     to paginas,
-            "category"      to textOf(R.id.editCategoria),
-            "categoria"     to textOf(R.id.editCategoria),
-            "coverUrl"      to textOf(R.id.editLinkCapa),
-            "linkPdf"       to textOf(R.id.editLinkPdf),
-            "linkAudiobook" to textOf(R.id.editLinkAudiobook),
-            "hasBraille"    to hasBraille,
-            "braille"       to hasBraille
-        )
-
-        val btn = findViewById<MaterialButton>(R.id.btnSalvarModificacoes)
-        btn?.isEnabled = false
-        btn?.text = getString(R.string.msg_salvando)
-
-        db.collection("livros").document(livroId)
-            .update(campos)
-            .addOnSuccessListener {
-                btn?.isEnabled = true
-                btn?.text = getString(R.string.btn_salvar_modificacoes)
-                Toast.makeText(this, getString(R.string.msg_modificacoes_salvas), Toast.LENGTH_SHORT).show()
-
-                val novoLinkCapa = textOf(R.id.editLinkCapa)
-                findViewById<ImageView>(R.id.imgCapaLivroDetalhe)?.load(
-                    novoLinkCapa.ifEmpty { null }
-                ) {
-                    placeholder(R.drawable.ic_sem_capa)
-                    error(R.drawable.ic_sem_capa)
-                    fallback(R.drawable.ic_sem_capa)
-                }
-            }
-            .addOnFailureListener {
-                btn?.isEnabled = true
-                btn?.text = getString(R.string.btn_salvar_modificacoes)
-                Toast.makeText(this, getString(R.string.erro_conexao_banco), Toast.LENGTH_SHORT).show()
-            }
-    }
-
-    // ─── CONTROLE DE EXEMPLARES (+/-) ─────────────────────────────────────────
+    // ─── CONTROLE DE EXEMPLARES ───────────────────────────────────────────────
 
     private fun atualizarExemplares(delta: Int) {
-        val novoTotal = (totalExemplares + delta).coerceAtLeast(0L)
-        val delta64   = novoTotal - totalExemplares
+        val tvTotal   = findViewById<TextView>(R.id.textExemplaresTotal)
+        val tvDisplay = findViewById<TextView>(R.id.textExemplaresDisplay)
+        val totalAtual = tvTotal.text.toString().toIntOrNull() ?: 0
+        val novoTotal  = (totalAtual + delta).coerceAtLeast(0)
+        // BUG-2 FIX: disponível não pode superar o total — cap imediato
+        val novaQtd    = qtdDisponivel.coerceAtMost(novoTotal)
 
-        val novoDisponivel = (quantidadeDisponivel + delta64).coerceAtLeast(0L).coerceAtMost(novoTotal)
-
-        val campos = mapOf(
-            "totalExemplares" to novoTotal,
-            "stockQuantity"   to novoTotal,
-            "quantidade"      to novoDisponivel,
-            "estoque"         to novoDisponivel,
-            "exemplares"      to novoDisponivel
-        )
+        // Atualização imediata da UI (optimistic update — sem esperar Firebase)
+        tvTotal.text   = novoTotal.toString()
+        tvDisplay.text = "$novaQtd/$novoTotal"
 
         db.collection("livros").document(livroId)
-            .update(campos)
+            .update(mapOf(
+                "exemplares"      to novoTotal,
+                "totalExemplares" to novoTotal,
+                "quantidade"      to novaQtd,
+                "estoque"         to novaQtd
+            ))
             .addOnSuccessListener {
                 if (isFinishing || isDestroyed) return@addOnSuccessListener
-                totalExemplares = novoTotal
-                quantidadeDisponivel = novoDisponivel
-                atualizarDisplayEstoque()
+                qtdDisponivel = novaQtd
             }
             .addOnFailureListener {
                 if (isFinishing || isDestroyed) return@addOnFailureListener
+                // Reverte a UI se a gravação falhou
+                tvTotal.text   = totalAtual.toString()
+                tvDisplay.text = "$qtdDisponivel/$totalAtual"
                 Toast.makeText(this, getString(R.string.erro_conexao_banco), Toast.LENGTH_SHORT).show()
             }
     }
 
     // ─── POPUP APAGAR ─────────────────────────────────────────────────────────
 
+    /**
+     * BUG-F3 FIX: valida senha via reauthenticate() antes de deletar o documento.
+     */
     private fun abrirPopupApagar() {
         val dialog = Dialog(this)
         activeDialog = dialog
@@ -330,6 +276,7 @@ class TelaRF37InfoLivroADM : AppCompatActivity() {
         val textErro     = dialog.findViewById<TextView>(R.id.textErroSenha)
         val btnConfirmar = dialog.findViewById<MaterialButton>(R.id.btnConfirmarApagar)
         val btnCancelar  = dialog.findViewById<MaterialButton>(R.id.btnCancelarApagar)
+
         textErro?.visibility = View.GONE
 
         btnConfirmar?.setOnClickListener {
@@ -356,7 +303,11 @@ class TelaRF37InfoLivroADM : AppCompatActivity() {
                     db.collection("livros").document(livroId).delete()
                         .addOnSuccessListener {
                             if (isFinishing || isDestroyed) return@addOnSuccessListener
-                            Toast.makeText(this, getString(R.string.msg_midia_removida), Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                this,
+                                getString(R.string.msg_midia_removida),
+                                Toast.LENGTH_SHORT
+                            ).show()
                             dialog.dismiss()
                             finish()
                         }
