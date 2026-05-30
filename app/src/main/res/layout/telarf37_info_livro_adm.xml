@@ -88,7 +88,8 @@
             android:background="@android:color/transparent"
             android:enabled="false"
             android:fontFamily="sans-serif-medium"
-            android:text="Machado de Assis"
+            android:text=""
+            tools:text="Machado de Assis"
             android:textColor="@color/white"
             android:textSize="18sp"
             app:layout_constraintEnd_toStartOf="@id/btnEditAutor"
@@ -185,7 +186,8 @@
                     android:enabled="false"
                     android:fontFamily="sans-serif"
                     android:lineSpacingExtra="8dp"
-                    android:text="Machado de Assis, neste livro, propõe a seguinte pergunta: quem é louco? Conheça a história do médico Simão Bacamarte, dedicado e estudioso da mente humana, que decide construir um hospício para tratar os doentes mentais na pequena cidade de Itaguaí a casa verde. Quem entra e quem fica de fora? Surpreenda-se com o final."
+                    android:text=""
+                    tools:text="Sinopse do livro..."
                     android:textColor="#555555"
                     android:textSize="16sp" />
             </LinearLayout>
@@ -216,7 +218,7 @@
                         android:layout_weight="1"
                         android:background="@android:color/transparent"
                         android:enabled="false"
-                        android:text="Português"
+                        android:text=""
                         android:textColor="#777777"
                         android:textSize="16sp" />
                     <ImageView
@@ -248,7 +250,7 @@
                         android:layout_weight="1"
                         android:background="@android:color/transparent"
                         android:enabled="false"
-                        android:text="Intrínseca"
+                        android:text=""
                         android:textColor="#777777"
                         android:textSize="16sp" />
                     <ImageView
@@ -280,7 +282,7 @@
                         android:layout_weight="1"
                         android:background="@android:color/transparent"
                         android:enabled="false"
-                        android:text="15.24 x 0.51 x 22.86 cm"
+                        android:text=""
                         android:textColor="#777777"
                         android:textSize="16sp" />
                     <ImageView
@@ -312,7 +314,7 @@
                         android:layout_weight="1"
                         android:background="@android:color/transparent"
                         android:enabled="false"
-                        android:text="856356093X"
+                        android:text=""
                         android:textColor="#777777"
                         android:textSize="16sp" />
                     <ImageView
@@ -344,7 +346,7 @@
                         android:layout_weight="1"
                         android:background="@android:color/transparent"
                         android:enabled="false"
-                        android:text="978-8563560933"
+                        android:text=""
                         android:textColor="#777777"
                         android:textSize="16sp" />
                     <ImageView
@@ -376,7 +378,7 @@
                         android:layout_weight="1"
                         android:background="@android:color/transparent"
                         android:enabled="false"
-                        android:text="18 dezembro 2019"
+                        android:text=""
                         android:textColor="#777777"
                         android:textSize="16sp" />
                     <ImageView

@@ -57,21 +57,58 @@ class TelaRF35ConfirmarCadastroADM : AppCompatActivity() {
     }
 
     /**
-     * Carrega usuários com cadastroConfirmado == false do Firestore.
+     * Carrega usuários pendentes de confirmação.
+     *
+     * Estratégia de dupla query para cobrir dois cenários:
+     *   A) Usuários registrados após o fix (campo "cadastroConfirmado" = false)
+     *   B) Usuários antigos que só têm "statusCadastro" = "pendente" (campo ausente)
+     *
+     * As duas listas são mescladas e deduplicadas pelo uid para evitar
+     * exibir o mesmo usuário duas vezes caso ele tenha ambos os campos.
      */
     private fun carregarPendentes() {
+        val uidsJaAdicionados = mutableSetOf<String>()
+
+        // Query A: campo adicionado pelo fix RF33
         db.collection("usuarios")
             .whereEqualTo("cadastroConfirmado", false)
             .get()
-            .addOnSuccessListener { result ->
+            .addOnSuccessListener { resultA ->
                 listaCompleta.clear()
-                for (doc in result) {
+                uidsJaAdicionados.clear()
+
+                for (doc in resultA) {
                     val uid   = doc.id
                     val nome  = doc.getString("nome")  ?: "Usuário"
                     val email = doc.getString("email") ?: ""
+                    // Ignora ADMs que não confirmaram ainda (role == "adm")
+                    if (doc.getString("role") == "adm") continue
                     listaCompleta.add(ItemUsuarioPendente(uid, nome, email))
+                    uidsJaAdicionados.add(uid)
                 }
-                filtrarLista("")
+
+                // Query B: fallback para usuários antigos sem o campo cadastroConfirmado
+                db.collection("usuarios")
+                    .whereEqualTo("statusCadastro", "pendente")
+                    .get()
+                    .addOnSuccessListener { resultB ->
+                        for (doc in resultB) {
+                            val uid = doc.id
+                            if (uid in uidsJaAdicionados) continue // já na lista A
+                            // Inclui apenas se cadastroConfirmado está ausente ou false
+                            val confirmado = doc.getBoolean("cadastroConfirmado")
+                            if (confirmado == true) continue
+                            if (doc.getString("role") == "adm") continue
+                            val nome  = doc.getString("nome")  ?: "Usuário"
+                            val email = doc.getString("email") ?: ""
+                            listaCompleta.add(ItemUsuarioPendente(uid, nome, email))
+                        }
+                        filtrarLista("")
+                    }
+                    .addOnFailureListener {
+                        // Fallback falhou — exibe apenas os resultados da query A
+                        filtrarLista("")
+                    }
             }
             .addOnFailureListener {
                 Toast.makeText(this, getString(R.string.erro_carregar_pendentes), Toast.LENGTH_SHORT).show()

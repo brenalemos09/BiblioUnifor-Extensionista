@@ -6,6 +6,7 @@ import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.LayoutInflater
 import android.view.View
 import android.view.Window
 import android.widget.Button
@@ -16,6 +17,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import coil.load
 import com.example.bibliounifornew.R
 import com.google.android.material.button.MaterialButton
@@ -23,6 +25,14 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class TelaRF37InfoLivroADM : AppCompatActivity() {
 
@@ -179,17 +189,65 @@ class TelaRF37InfoLivroADM : AppCompatActivity() {
 
     // ─── AVALIAÇÕES ───────────────────────────────────────────────────────────
 
+    /**
+     * RF35.7: Carrega avaliações textuais de livros/{livroId}/avaliacoes (últimas 10).
+     * Campos esperados: nomeUsuario, textoAvaliacao, dataMs.
+     * Exibe inline no containerAvaliacoes com data formatada.
+     */
     private fun carregarAvaliacoes() {
-        val container = findViewById<LinearLayout>(R.id.containerAvaliacoes)
+        val container         = findViewById<LinearLayout>(R.id.containerAvaliacoes) ?: return
         val textSemAvaliacoes = findViewById<TextView>(R.id.textSemAvaliacoes)
 
-        container?.let {
-            for (i in it.childCount - 1 downTo 0) {
-                val child = it.getChildAt(i)
-                if (child.id != R.id.textSemAvaliacoes) it.removeView(child)
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val snapshot = db.collection("livros")
+                    .document(livroId)
+                    .collection("avaliacoes")
+                    .orderBy("dataMs", Query.Direction.DESCENDING)
+                    .limit(10)
+                    .get()
+                    .await()
+
+                withContext(Dispatchers.Main) {
+                    if (isFinishing || isDestroyed) return@withContext
+
+                    // Limpa filhos antigos, mantém só o textSemAvaliacoes
+                    for (i in container.childCount - 1 downTo 0) {
+                        val child = container.getChildAt(i)
+                        if (child.id != R.id.textSemAvaliacoes) container.removeView(child)
+                    }
+
+                    if (snapshot.isEmpty) {
+                        textSemAvaliacoes?.visibility = View.VISIBLE
+                        return@withContext
+                    }
+
+                    textSemAvaliacoes?.visibility = View.GONE
+                    val sdf = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
+
+                    for (doc in snapshot.documents) {
+                        val nome  = doc.getString("nomeUsuario")    ?: doc.getString("idUsuario") ?: "Usuário"
+                        val texto = doc.getString("textoAvaliacao") ?: continue
+                        val data  = doc.getLong("dataMs")?.let { sdf.format(Date(it)) } ?: ""
+
+                        // Infla um card de avaliação por linha
+                        val itemView = LayoutInflater.from(this@TelaRF37InfoLivroADM)
+                            .inflate(R.layout.item_avaliacao_livro, container, false)
+
+                        itemView.findViewById<TextView>(R.id.txtNomeAvaliador)?.text  = nome
+                        itemView.findViewById<TextView>(R.id.txtTextoAvaliacao)?.text = texto
+                        itemView.findViewById<TextView>(R.id.txtDataAvaliacao)?.text  = data
+
+                        container.addView(itemView)
+                    }
+                }
+            } catch (_: Exception) {
+                withContext(Dispatchers.Main) {
+                    if (isFinishing || isDestroyed) return@withContext
+                    textSemAvaliacoes?.visibility = View.VISIBLE
+                }
             }
         }
-        textSemAvaliacoes?.visibility = View.VISIBLE
     }
 
     // ─── EDIÇÃO DE CAMPOS ─────────────────────────────────────────────────────

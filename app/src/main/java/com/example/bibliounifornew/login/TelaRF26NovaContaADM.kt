@@ -318,19 +318,36 @@ class TelaRF26NovaContaADM : AppCompatActivity() {
                     authRepository.registrarUsuario(sEmail, sSenha) { sucesso, uidOuErro ->
                         runOnUiThread {
                             if (sucesso && uidOuErro != null) {
+                                val agora = System.currentTimeMillis()
                                 val perfil = hashMapOf(
+                                    "uid"                to uidOuErro,
                                     "nome"               to sNome,
                                     "usuario"            to sUsuario,
                                     "email"              to sEmail,
                                     "role"               to "adm",
-                                    "cadastroConfirmado" to false,
-                                    "criadoEm"           to System.currentTimeMillis()
+                                    "cadastroConfirmado" to true,  // ADM não precisa de aprovação
+                                    "contaAtiva"         to true,
+                                    "criadoEm"           to agora
                                 )
-                                db.collection("administradores").document(uidOuErro)
-                                    .set(perfil, SetOptions.merge())
+
+                                // RF36 FIX CRÍTICO: WriteBatch grava em AMBAS as coleções.
+                                // TelaRF23LoginADM verifica role em "usuarios" — sem esse doc,
+                                // o ADM recebe "Perfil não encontrado" ao tentar logar.
+                                // "administradores" é mantido para o dashboard carregar o perfil.
+                                val batch = db.batch()
+                                batch.set(
+                                    db.collection("usuarios").document(uidOuErro),
+                                    perfil,
+                                    SetOptions.merge()
+                                )
+                                batch.set(
+                                    db.collection("administradores").document(uidOuErro),
+                                    perfil,
+                                    SetOptions.merge()
+                                )
+
+                                batch.commit()
                                     .addOnSuccessListener {
-                                        com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
-                                            ?.sendEmailVerification()
                                         popup()
                                     }
                                     .addOnFailureListener {
